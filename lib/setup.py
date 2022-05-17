@@ -39,7 +39,7 @@ class Experiment:
 
 def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[Experiment, None]]):
     timestamp = datetime.now()
-    for name, parameters in setup_config.items():
+    for name, parameters in setup_config["experiments"].items():
         print(f"running experiment {name} (model: {parameters['model']})")
 
         model = parameters["model"]

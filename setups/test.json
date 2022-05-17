@@ -1,10 +1,13 @@
 {
-    "stone-test": {
-        "model": "stone",
-        "comment": "stone test experiment"
-    },
-    "winge-test": {
-        "model": "winge",
-        "comment": "winge test experiment"
+    "cores": 2,
+    "experiments": {
+        "stone-test": {
+            "model": "stone",
+            "comment": "stone test experiment"
+        },
+        "winge-test": {
+            "model": "winge",
+            "comment": "winge test experiment"
+        }
     }
 }
