@@ -1,4 +1,5 @@
 from lib.setup import Experiment, ExperimentResults
+from loguru import logger
 
 class StoneResults(ExperimentResults):
     def __init__(self, name: str, parameters: dict) -> None:
@@ -16,5 +17,5 @@ class StoneExperiment(Experiment):
         self.parameters = parameters
 
     def run(self, name: str) -> ExperimentResults:
-        print(f"running stone model (experiment {name})")
+        logger.info(f"running stone model (experiment {name})")
         return StoneResults(name, self.parameters)

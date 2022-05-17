@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+from loguru import logger
+
 import argparse
 import json
 import os
@@ -18,10 +20,10 @@ if __name__ == "__main__":
         with open(args.setup, "r") as f:
             setup_file = open(args.setup, "r")
             setup = json.load(setup_file)
-            print(f"setup: {args.setup}")
+            logger.debug(f"setup: {args.setup}")
 
         setup_name = pathlib.Path(args.setup).stem
         lib.setup.run(setup_name, setup, lib.models)
 
     except FileNotFoundError:
-        print(f"error: setup file '{args.setup}' not found")
+        logger.error(f"error: setup file '{args.setup}' not found")

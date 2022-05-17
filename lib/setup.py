@@ -3,6 +3,7 @@ from typing import Callable, Tuple, Union
 from datetime import datetime
 from pathlib import Path
 from multiprocessing import Pool
+from loguru import logger
 
 import json
 
@@ -51,15 +52,15 @@ def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union
             raise RuntimeError(f"unknown model: {model}")
         experiments.append((setup_name,name,timestamp,experiment))
 
-    print(f"running {len(experiments)} experiments on {threads} threads")
+    logger.info(f"running {len(experiments)} experiments on {threads} threads")
     with Pool(threads) as p:
         p.map(run_experiment, experiments)
 
 
 def run_experiment(task: Tuple[str,str,datetime,Experiment]):
     setup_name, name, timestamp, experiment = task
-    print(f"running experiment {name} of type {type(experiment)})")
+    logger.info(f"running experiment {name} of type {type(experiment)})")
     results = experiment.run(name)
-    print(f"done running {name}")
+    logger.info(f"done running {name}")
     results.save(setup_name, timestamp)
     results.report()
