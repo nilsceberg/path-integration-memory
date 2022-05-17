@@ -70,7 +70,7 @@ def run_experiment(task: Tuple[str, str, datetime, Experiment, str]):
     logger.add(
         sys.stderr,
         colorize=True,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <" + color + ">{extra[experiment]: ^16}</" + color + "> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>   <level>{message}</level>",
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> <" + color + ">{extra[experiment]}</" + color + ">   <level>{message}</level>",
         filter=lambda record: "experiment" in record["extra"] and record["extra"]["experiment"] == name,
     )
 
