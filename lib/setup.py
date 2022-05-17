@@ -11,7 +11,7 @@ class ExperimentSetup:
     def run(self, name: str) -> ExperimentResults:
         pass
 
-def run(setup_config: dict, models: Callable[[str, dict], ExperimentSetup]):
+def run(setup_config: dict, models: Callable[[str, dict], ExperimentSetup | None]):
     for name, parameters in setup_config.items():
         print(f"running experiment {name} (model: {parameters['model']})")
 
