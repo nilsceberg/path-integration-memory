@@ -22,6 +22,3 @@ if __name__ == "__main__":
 
     except FileNotFoundError:
         print(f"error: setup file '{args.setup}' not found")
-    
-    except Exception as e:
-        print(f"error: {e}")
