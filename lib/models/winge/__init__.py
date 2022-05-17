@@ -1,5 +1,5 @@
 from datetime import datetime
-from lib.setup import ExperimentSetup, ExperimentResults
+from lib.setup import Experiment, ExperimentResults
 
 class WingeResults(ExperimentResults):
     def __init__(self, name: str, parameters: dict) -> None:
@@ -11,11 +11,11 @@ class WingeResults(ExperimentResults):
     def serialize(self):
         return "winge results"
 
-class WingeSetup(ExperimentSetup):
+class WingeExperiment(Experiment):
     def __init__(self, parameters: dict) -> None:
         super().__init__()
         self.parameters = parameters
 
     def run(self, name: str) -> ExperimentResults:
-        print(f"running winge setup (experiment {name})")
+        print(f"running winge model (experiment {name})")
         return WingeResults(name, self.parameters)

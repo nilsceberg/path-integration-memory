@@ -1,14 +1,14 @@
 from abc import abstractmethod
 from typing import Union
 
-from .setup import ExperimentSetup
-from .models.stone import StoneSetup
-from .models.winge import WingeSetup
+from .setup import Experiment
+from .models.stone import StoneExperiment
+from .models.winge import WingeExperiment
 
-def models(model: str, parameters: dict) -> Union[ExperimentSetup, None]:
+def models(model: str, parameters: dict) -> Union[Experiment, None]:
     if model == "stone":
-        return StoneSetup(parameters)
+        return StoneExperiment(parameters)
     if model == "winge":
-        return WingeSetup(parameters)
+        return WingeExperiment(parameters)
     else:
         return None

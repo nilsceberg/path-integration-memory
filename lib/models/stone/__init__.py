@@ -1,4 +1,4 @@
-from lib.setup import ExperimentSetup, ExperimentResults
+from lib.setup import Experiment, ExperimentResults
 
 class StoneResults(ExperimentResults):
     def __init__(self, name: str, parameters: dict) -> None:
@@ -10,11 +10,11 @@ class StoneResults(ExperimentResults):
     def serialize(self):
         return "stone results"
 
-class StoneSetup(ExperimentSetup):
+class StoneExperiment(Experiment):
     def __init__(self, parameters: dict) -> None:
         super().__init__()
         self.parameters = parameters
 
     def run(self, name: str) -> ExperimentResults:
-        print(f"running stone setup (experiment {name})")
+        print(f"running stone model (experiment {name})")
         return StoneResults(name, self.parameters)

@@ -32,23 +32,23 @@ class ExperimentResults:
         with open(filename, "w") as f:
             json.dump(output, f, indent = 2)
 
-class ExperimentSetup:
+class Experiment:
     @abstractmethod
     def run(self, name: str) -> ExperimentResults:
         pass
 
-def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[ExperimentSetup, None]]):
+def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[Experiment, None]]):
     timestamp = datetime.now()
     for name, parameters in setup_config.items():
         print(f"running experiment {name} (model: {parameters['model']})")
 
         model = parameters["model"]
 
-        setup = models(model, parameters)
-        if not setup:
+        experiment = models(model, parameters)
+        if not experiment:
             raise RuntimeError(f"unknown model: {model}")
 
-        results = setup.run(name)
-        results.report()
+        results = experiment.run(name)
 
         results.save(setup_name, timestamp)
+        results.report()
