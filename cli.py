@@ -27,3 +27,6 @@ if __name__ == "__main__":
 
     except FileNotFoundError:
         logger.error(f"error: setup file '{args.setup}' not found")
+
+    except Exception:
+        logger.exception("unhandled exception")
