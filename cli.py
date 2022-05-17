@@ -13,6 +13,8 @@ import lib.setup
 
 parser = argparse.ArgumentParser()
 parser.add_argument("setup")
+parser.add_argument("--threads", type=int)
+
 logger.remove()
 logger.add(
     sys.stderr,
@@ -29,6 +31,10 @@ if __name__ == "__main__":
             setup_file = open(args.setup, "r")
             setup = json.load(setup_file)
             logger.debug(f"setup: {args.setup}")
+
+        # override setup config with command-line arguments
+        if args.threads:
+            setup["threads"] = args.threads
 
         setup_name = pathlib.Path(args.setup).stem
         lib.setup.run(setup_name, setup, lib.models)
