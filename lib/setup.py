@@ -5,8 +5,8 @@ from pathlib import Path
 from multiprocessing import Pool
 from loguru import logger
 
+import sys
 import json
-
 
 class ExperimentResults:
     def __init__(self, name: str, parameters: dict) -> None:
@@ -40,27 +40,43 @@ class Experiment:
     def run(self, name: str) -> ExperimentResults:
         pass
 
+experiment_log_colors = ["red", "magenta", "yellow", "red", "green", "blue"]
 def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[Experiment, None]]):
     threads = setup_config["threads"] if "threads" in setup_config else 1
     
     timestamp = datetime.now()
     experiments = []
+    color_index = 0
     for name, parameters in setup_config["experiments"].items():
         model = parameters["model"]
         experiment = models(model, parameters)
         if not experiment:
             raise RuntimeError(f"unknown model: {model}")
-        experiments.append((setup_name,name,timestamp,experiment))
+
+        # choose a color for logging
+        color = experiment_log_colors[color_index]
+        color_index = (color_index + 1) % len(experiment_log_colors)
+
+        experiments.append((setup_name, name, timestamp, experiment, color))
 
     logger.info(f"running {len(experiments)} experiments on {threads} threads")
     with Pool(threads) as p:
         p.map(run_experiment, experiments)
 
 
-def run_experiment(task: Tuple[str,str,datetime,Experiment]):
-    setup_name, name, timestamp, experiment = task
-    logger.info(f"running experiment {name} of type {type(experiment)})")
-    results = experiment.run(name)
-    logger.info(f"done running {name}")
-    results.save(setup_name, timestamp)
-    results.report()
+def run_experiment(task: Tuple[str, str, datetime, Experiment, str]):
+    setup_name, name, timestamp, experiment, color = task
+
+    logger.add(
+        sys.stderr,
+        colorize=True,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <" + color + ">{extra[experiment]: ^16}</" + color + "> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>   <level>{message}</level>",
+        filter=lambda record: "experiment" in record["extra"] and record["extra"]["experiment"] == name,
+    )
+
+    with logger.contextualize(experiment = name):
+        logger.info(f"running experiment {name} of type {experiment.__class__.__name__}")
+        results = experiment.run(name)
+        logger.info(f"done running {name}")
+        results.save(setup_name, timestamp)
+        results.report()
