@@ -2,6 +2,8 @@
 
 import argparse
 import json
+import os
+import pathlib
 
 import lib
 import lib.setup
@@ -18,7 +20,8 @@ if __name__ == "__main__":
             setup = json.load(setup_file)
             print(f"setup: {args.setup}")
 
-        lib.setup.run(setup, lib.models)
+        setup_name = pathlib.Path(args.setup).stem
+        lib.setup.run(setup_name, setup, lib.models)
 
     except FileNotFoundError:
         print(f"error: setup file '{args.setup}' not found")
