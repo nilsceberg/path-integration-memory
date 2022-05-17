@@ -1,9 +1,11 @@
 from abc import abstractmethod
-import json
-from typing import Callable, Union
+from typing import Callable, Tuple, Union
 from datetime import datetime
 from pathlib import Path
-import os
+from multiprocessing import Pool
+
+import json
+
 
 class ExperimentResults:
     def __init__(self, name: str, parameters: dict) -> None:
@@ -38,17 +40,26 @@ class Experiment:
         pass
 
 def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[Experiment, None]]):
+    threads = setup_config["threads"] if "threads" in setup_config else 1
+    
     timestamp = datetime.now()
+    experiments = []
     for name, parameters in setup_config["experiments"].items():
-        print(f"running experiment {name} (model: {parameters['model']})")
-
         model = parameters["model"]
-
         experiment = models(model, parameters)
         if not experiment:
             raise RuntimeError(f"unknown model: {model}")
+        experiments.append((setup_name,name,timestamp,experiment))
 
-        results = experiment.run(name)
+    print(f"running {len(experiments)} experiments on {threads} threads")
+    with Pool(threads) as p:
+        p.map(run_experiment, experiments)
 
-        results.save(setup_name, timestamp)
-        results.report()
+
+def run_experiment(task: Tuple[str,str,datetime,Experiment]):
+    setup_name, name, timestamp, experiment = task
+    print(f"running experiment {name} of type {type(experiment)})")
+    results = experiment.run(name)
+    print(f"done running {name}")
+    results.save(setup_name, timestamp)
+    results.report()
