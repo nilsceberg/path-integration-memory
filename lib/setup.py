@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable
+from typing import Callable, Union
 
 class ExperimentResults:
     @abstractmethod
@@ -11,7 +11,7 @@ class ExperimentSetup:
     def run(self, name: str) -> ExperimentResults:
         pass
 
-def run(setup_config: dict, models: Callable[[str, dict], ExperimentSetup | None]):
+def run(setup_config: dict, models: Callable[[str, dict], Union[ExperimentSetup, None]]):
     for name, parameters in setup_config.items():
         print(f"running experiment {name} (model: {parameters['model']})")
 
