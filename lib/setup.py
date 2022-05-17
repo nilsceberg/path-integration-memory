@@ -1,12 +1,9 @@
 from abc import abstractmethod
 import json
-from typing import Callable
+from typing import Callable, Union
 from datetime import datetime
 from pathlib import Path
 import os
-
-
-datetime.now()
 
 class ExperimentResults:
     def __init__(self, name: str, parameters: dict) -> None:
@@ -40,9 +37,8 @@ class ExperimentSetup:
     def run(self, name: str) -> ExperimentResults:
         pass
 
-def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], ExperimentSetup | None]):
+def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[ExperimentSetup, None]]):
     timestamp = datetime.now()
-
     for name, parameters in setup_config.items():
         print(f"running experiment {name} (model: {parameters['model']})")
 
