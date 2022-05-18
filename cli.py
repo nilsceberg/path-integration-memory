@@ -8,8 +8,8 @@ import os
 import pathlib
 import sys
 
-import lib
-import lib.setup
+import pim
+import pim.setup
 
 parser = argparse.ArgumentParser()
 parser.add_argument("setup")
@@ -37,7 +37,7 @@ if __name__ == "__main__":
             setup["threads"] = args.threads
 
         setup_name = pathlib.Path(args.setup).stem
-        lib.setup.run(setup_name, setup, lib.models)
+        pim.setup.run(setup_name, setup, pim.models)
 
     except FileNotFoundError:
         logger.error(f"error: setup file '{args.setup}' not found")

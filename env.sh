@@ -14,7 +14,7 @@ else
 
     # add pim module path to site packages
     site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
-    pwd > $site_packages/pim.pth
+    realpath lib > $site_packages/pim.pth
 
     # create an ipykernel for jupyter
     python -m ipykernel install --user --name pim

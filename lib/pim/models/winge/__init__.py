@@ -1,7 +1,10 @@
-from lib.setup import Experiment, ExperimentResults
+from datetime import datetime
 from loguru import logger
+import time
 
-class StoneResults(ExperimentResults):
+from ...setup import Experiment, ExperimentResults
+
+class WingeResults(ExperimentResults):
     def __init__(self, name: str, parameters: dict) -> None:
         super().__init__(name, parameters)
 
@@ -9,13 +12,14 @@ class StoneResults(ExperimentResults):
         pass
 
     def serialize(self):
-        return "stone results"
+        return "winge results"
 
-class StoneExperiment(Experiment):
+class WingeExperiment(Experiment):
     def __init__(self, parameters: dict) -> None:
         super().__init__()
         self.parameters = parameters
 
     def run(self, name: str) -> ExperimentResults:
-        logger.info(f"running stone model (experiment {name})")
-        return StoneResults(name, self.parameters)
+        logger.info(f"running winge model (experiment {name})")
+        time.sleep(5)
+        return WingeResults(name, self.parameters)
