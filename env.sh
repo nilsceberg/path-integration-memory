@@ -6,7 +6,7 @@ else
     echo "performing initial setup"
 
     # create and activate virtual environment
-    python3 -m venv venv || return
+    python3 -m venv venv || (rm -rf venv && return)
     source venv/bin/activate
 
     # install dependencies
