@@ -7,7 +7,7 @@ class StoneResults(ExperimentResults):
         super().__init__(name, parameters)
 
     def report(self):
-        pass
+        print(self.serialize())
 
     def serialize(self):
         return "stone results"

@@ -1,0 +1,32 @@
+#!/usr/bin/env python3
+
+import sys
+import subprocess
+import json
+
+# Run a quick check on staged Jupyter Notebooks to make sure they do not include
+# output, since that would cause a bit of a mess in the repository.
+
+# Get staged files
+completed_process = subprocess.run("git diff --name-only --cached", shell=True, capture_output=True)
+staged_files = completed_process.stdout.decode("utf-8").split()
+
+# Find notebooks
+cell_output_found = False
+for filename in staged_files:
+    if filename.endswith(".ipynb"):
+        # Load notebook
+        with open(filename, "r", encoding="utf-8") as file:
+            notebook = json.load(file)
+            if any([cell["outputs"] != [] for cell in notebook["cells"]]):
+                cell_output_found = True
+                print(f"\u001b[33mwarning\u001b[0m: staged notebook '{filename}' contains cell output")
+
+# Exit with non-zero if saved output is found
+if cell_output_found:
+    print()
+    print("\u001b[31maborting commit\u001b[0m; override this check with --no-verify if this is intended")
+    print()
+    sys.exit(1)
+else:
+    sys.exit(0)

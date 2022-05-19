@@ -2,3 +2,6 @@ __pycache__
 results
 trash
 venv
+
+# Jupyter
+.ipynb_checkpoints
