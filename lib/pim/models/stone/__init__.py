@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from ...setup import Experiment, ExperimentResults
 
 from . import trials
+from . import cx_basic
 from . import cx_rate
 from . import plotter
 
@@ -50,12 +51,21 @@ class StoneExperiment(Experiment):
         T_outbound = self.parameters["T_outbound"]
         T_inbound = self.parameters["T_inbound"]
         noise = self.parameters["noise"]
+        cx_type = self.parameters["cx"]
 
         logger.info(f"generating outbound route")
         headings, velocities = trials.generate_route(T = T_outbound, vary_speed = True)
 
         logger.info("initializing central complex")
-        cx = cx_rate.CXRatePontin(noise = noise)
+
+        if cx_type == "basic":
+            cx = cx_basic.CXBasic()
+        elif cx_type == "rate":
+            cx = cx_rate.CXRate(noise = noise)
+        elif cx_type == "pontin":
+            cx = cx_rate.CXRatePontin(noise = noise)
+        else:
+            raise RuntimeError("unknown cx type: " + cx_type)
 
         logger.info("running trial")
         headings, velocities, log, cpu4_snapshot = trials.run_trial(

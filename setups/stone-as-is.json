@@ -2,9 +2,10 @@
     "experiments": {
         "stone": {
             "model": "stone",
-            "T_outbound": 1500,
+            "T_outbound": 3000,
             "T_inbound": 1500,
-            "noise": 0.1
+            "noise": 0.1,
+            "cx": "basic"
         }
     }
 }
