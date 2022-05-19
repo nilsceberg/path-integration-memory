@@ -13,7 +13,7 @@ import pim.setup
 
 parser = argparse.ArgumentParser()
 parser.add_argument("setup")
-parser.add_argument("--threads", type=int)
+parser.add_argument("--threads", type=int, help="run THREADS experiments in parallel")
 
 parser.add_argument("--report", action="store_true", help="generate report")
 parser.add_argument("--throw", dest="save", action="store_false", help="don't save results")
