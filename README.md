@@ -10,7 +10,7 @@ which can be done by sourcing the `env.sh` script:
     source env.sh
 
 
-## Command-line interface
+### Command-line interface
 
 The quickest way to run an experiment setup is using the command-line interface.
 The following will run the unmodified Stone model with parameters specified in
@@ -25,7 +25,7 @@ For documentation of the CLI options, run:
     ./cli.py --help
 
 
-## Using with Jupyter
+### Using with Jupyter
 
 The `env.sh` script also creates an IPython kernel for use with Jupyter;
 choose the `pim` kernel under Kernel -> Change Kernel...
