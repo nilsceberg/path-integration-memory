@@ -1,13 +1,31 @@
 # path-integration-memory
 Memory modelling for insect path integration.
 
+
 ## Getting started
+
 It is recommended to use a virtual Python environment,
 which can be done by sourcing the `env.sh` script:
 
     source env.sh
 
-### Using with Jupyter
+
+## Command-line interface
+
+The quickest way to run an experiment setup is using the command-line interface.
+The following will run the unmodified Stone model with parameters specified in
+`setups/stone-as-is.json`, and output a report:
+
+    ./cli.py setups/stone-as-is.json --report
+
+Results will also be saved in the `results` directory.
+
+For documentation of the CLI options, run:
+
+    ./cli.py --help
+
+
+## Using with Jupyter
 
 The `env.sh` script also creates an IPython kernel for use with Jupyter;
 choose the `pim` kernel under Kernel -> Change Kernel...
