@@ -40,7 +40,6 @@ def deep_update(obj: dict, path: str, value: str):
 
 if __name__ == "__main__":
     args = parser.parse_args()
-    print(args)
 
     try:
         with open(args.setup, "r") as f:
