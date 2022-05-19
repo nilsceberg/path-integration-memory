@@ -17,7 +17,7 @@ parser.add_argument("--threads", type=int, help="run THREADS experiments in para
 
 parser.add_argument("--report", action="store_true", help="generate report")
 parser.add_argument("--throw", dest="save", action="store_false", help="don't save results")
-parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5")
+parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5", default=[])
 
 logger.remove()
 logger.add(
