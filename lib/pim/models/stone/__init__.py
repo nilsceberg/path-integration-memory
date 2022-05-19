@@ -9,18 +9,18 @@ from . import cx_rate
 from . import plotter
 
 class StoneResults(ExperimentResults):
-    def __init__(self, name: str, parameters: dict, route, log, cpu4_snapshot) -> None:
+    def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot) -> None:
         super().__init__(name, parameters)
-        self.route = route
+        self.headings = headings
+        self.velocities = velocities
         self.log = log
         self.cpu4_snapshot = cpu4_snapshot
 
     def report(self):
         logger.info("plotting route")
-        h, v = self.route
         fig, ax = plotter.plot_route(
-            h = h,
-            v = v,
+            h = self.headings,
+            v = self.velocities,
             T_outbound = self.parameters["T_outbound"],
             T_inbound = self.parameters["T_inbound"],
             plot_speed = True,
@@ -32,7 +32,8 @@ class StoneResults(ExperimentResults):
 
     def serialize(self):
         return {
-            #"route": self.route,
+            "headings": self.headings.tolist(),
+            "velocities": self.headings.tolist(),
 
             # annoying to serialize:
             #"log": self.log,
@@ -51,19 +52,19 @@ class StoneExperiment(Experiment):
         noise = self.parameters["noise"]
 
         logger.info(f"generating outbound route")
-        h, v = trials.generate_route(T = T_outbound, vary_speed = True)
+        headings, velocities = trials.generate_route(T = T_outbound, vary_speed = True)
 
         logger.info("initializing central complex")
         cx = cx_rate.CXRatePontin(noise = noise)
 
         logger.info("running trial")
-        h, v, log, cpu4_snapshot = trials.run_trial(
+        headings, velocities, log, cpu4_snapshot = trials.run_trial(
             logging = True,
             T_outbound = T_outbound,
             T_inbound = T_inbound,
             noise = self.parameters["noise"],
             cx = cx,
-            route = (h[:T_outbound], v[:T_outbound])
+            route = (headings[:T_outbound], velocities[:T_outbound])
         )
 
-        return StoneResults(name, self.parameters, (h, v), log, cpu4_snapshot)
+        return StoneResults(name, self.parameters, headings, velocities, log, cpu4_snapshot)
