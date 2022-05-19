@@ -15,6 +15,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("setup")
 parser.add_argument("--threads", type=int)
 
+parser.add_argument("--report", action="store_true", help="generate report")
+parser.add_argument("--throw", dest="save", action="store_false", help="don't save results")
+
 logger.remove()
 logger.add(
     sys.stderr,
@@ -25,6 +28,7 @@ logger.add(
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    print(args)
 
     try:
         with open(args.setup, "r") as f:
@@ -37,7 +41,7 @@ if __name__ == "__main__":
             setup["threads"] = args.threads
 
         setup_name = pathlib.Path(args.setup).stem
-        pim.setup.run(setup_name, setup, pim.models)
+        pim.setup.run(setup_name, setup, pim.models, save = args.save, report = args.report)
 
     except FileNotFoundError:
         logger.error(f"error: setup file '{args.setup}' not found")

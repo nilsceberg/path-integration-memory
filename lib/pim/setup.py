@@ -41,7 +41,7 @@ class Experiment:
         pass
 
 experiment_log_colors = ["red", "magenta", "yellow", "red", "green", "blue"]
-def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[Experiment, None]]):
+def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[Experiment, None]], report = True, save = False):
     threads = setup_config["threads"] if "threads" in setup_config else 1
     
     timestamp = datetime.now()
@@ -57,15 +57,15 @@ def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union
         color = experiment_log_colors[color_index]
         color_index = (color_index + 1) % len(experiment_log_colors)
 
-        experiments.append((setup_name, name, timestamp, experiment, color))
+        experiments.append((setup_name, name, timestamp, experiment, color, report, save))
 
     logger.info(f"running {len(experiments)} experiments on {threads} threads")
     with Pool(threads) as p:
         p.map(run_experiment, experiments)
 
 
-def run_experiment(task: Tuple[str, str, datetime, Experiment, str]):
-    setup_name, name, timestamp, experiment, color = task
+def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool]):
+    setup_name, name, timestamp, experiment, color, report, save = task
 
     logger.add(
         sys.stderr,
@@ -78,5 +78,9 @@ def run_experiment(task: Tuple[str, str, datetime, Experiment, str]):
         logger.info(f"running experiment {name} of type {experiment.__class__.__name__}")
         results = experiment.run(name)
         logger.info(f"done running {name}")
-        results.save(setup_name, timestamp)
-        results.report()
+
+        if save:
+            results.save(setup_name, timestamp)
+
+        if report:
+            results.report()
