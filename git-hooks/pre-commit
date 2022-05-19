@@ -15,12 +15,14 @@ staged_files = completed_process.stdout.decode("utf-8").split()
 cell_output_found = False
 for filename in staged_files:
     if filename.endswith(".ipynb"):
-        # Load notebook
-        with open(filename, "r", encoding="utf-8") as file:
-            notebook = json.load(file)
-            if any([cell["outputs"] != [] for cell in notebook["cells"]]):
-                cell_output_found = True
-                print(f"\u001b[33mwarning\u001b[0m: staged notebook '{filename}' contains cell output")
+        # Load notebook as it looks in the staging area using 'git show :filename' (note the colon)
+        completed_process = subprocess.run(["git", "show", ":" + filename], capture_output=True)
+        notebook = json.loads(completed_process.stdout.decode("utf-8"))
+
+        # If any cell contains output, warn and set abort flag
+        if any([cell["outputs"] != [] for cell in notebook["cells"]]):
+            cell_output_found = True
+            print(f"\u001b[33mwarning\u001b[0m: staged notebook '{filename}' contains cell output")
 
 # Exit with non-zero if saved output is found
 if cell_output_found:
