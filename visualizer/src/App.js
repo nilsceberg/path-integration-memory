@@ -17,7 +17,7 @@ function App() {
   const state = lastJsonMessage;
 
   const bee = state
-    ? <div style={{ width: 8, height: 8, background: "black", position: 'fixed', left: 200 + 100 * state.position[0], top: 200 - 100 * state.position[1] }}/>
+    ? <div style={{ width: 8, height: 8, background: "black", position: 'fixed', left: 200 + 10 * state.position[0], top: 200 - 10 * state.position[1] }}/>
     : null;
 
   return (
