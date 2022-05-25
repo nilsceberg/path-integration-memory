@@ -10,8 +10,11 @@ from pygame.locals import *
 from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
 import scipy
 
-def model(args, x, noise = 0.0):
+def cpu4_model(args, x):
     return args[0] * np.cos(np.pi + 2*x + args[1])
+
+def tb1_model(args, x):
+    return 0.5 + np.cos(np.pi + x + args[0]) * 0.5
 
 def error_gradient(data, m, r, theta):
     x = np.linspace(0, 2*np.pi, data.size, endpoint=False)
@@ -20,11 +23,26 @@ def error_gradient(data, m, r, theta):
         np.sum(2 * (data - m(x))*(r*np.sin(np.pi + x + theta)))
     )
 
-def fit(data):
+def fit_cpu4(data):
     xs = np.linspace(0, 2*np.pi, central_complex.N_CPU4, endpoint = False)
-    error = lambda args: model(args, xs) - data
+    error = lambda args: cpu4_model(args, xs) - data
     params, _ = scipy.optimize.leastsq(error, np.array([0.1, 0.01]))
     return params
+
+def fit_tb1(data):
+    xs = np.linspace(0, 2*np.pi, central_complex.N_TB1, endpoint = False)
+    error = lambda args: tb1_model(args, xs) - data
+    params, _ = scipy.optimize.leastsq(error, np.array([0.1]))
+    return params
+
+def decode_cpu4(cpu4_output):
+    cpu4_normalized = (cpu4 - 0.5)*2.0
+    params = fit_cpu4(cpu4_normalized)
+    return params
+
+def decode_tb1(tb1_output):
+    heading = fit_tb1(tb1_output)[0]
+    return heading
 
 def world_to_screen(pos):
     pos = np.array([1.0, -1.0]) * 0.01 * pos
@@ -105,11 +123,6 @@ cpu4 = np.copy(memory)
 motor = 0
 last_decoded = []
 
-def decode_cpu4(cpu4_output):
-    cpu4_normalized = (cpu4 - 0.5)*2.0
-    params = fit(cpu4_normalized)
-    return params
-
 decoded_polar = np.array([0, 0])
 while running:
     dt = clock.get_time() / 1000
@@ -178,6 +191,7 @@ while running:
         ]) * decoded_polar[0] * 300.0])[-16:]
 
     decoded = np.mean(np.array(last_decoded), 0)
+    decoded_angle = decode_tb1(tb1)
 
     # background of window
     display.fill((50,50,50))
@@ -185,7 +199,7 @@ while running:
     # Draw bee
     # animate bee
     current_time = pygame.time.get_ticks()
-    if current_time - last_update >= 80:
+    if current_time - last_update >= 20:
         current_frame = (current_frame + 1) % len(animation_list)
         last_update = current_time
 
@@ -193,10 +207,11 @@ while running:
     pygame.draw.line(surface=display, start_pos=world_to_screen((0, 0)), end_pos=world_to_screen(position), color=(128, 128, 128))    
 
     # rotate bee
-    frame_copy = pygame.transform.rotate(animation_list[current_frame], np.degrees(heading) - 90)
+    frame_copy = pygame.transform.rotate(animation_list[current_frame], np.degrees(-decoded_angle) - 90)
     center_position = tuple(map(lambda i, j: i-j, world_to_screen(decoded), (int(frame_copy.get_width() / 2), int(frame_copy.get_height() / 2))))
     frame_copy.set_alpha(128)
     display.blit(frame_copy, center_position)
+    frame_copy = pygame.transform.rotate(animation_list[current_frame], np.degrees(heading) - 90)
     center_position = tuple(map(lambda i, j: i-j, world_to_screen(position), (int(frame_copy.get_width() / 2), int(frame_copy.get_height() / 2))))
     frame_copy.set_alpha(255)
     display.blit(frame_copy, center_position)
@@ -208,9 +223,8 @@ while running:
     pygame.draw.line(surface=display, start_pos=(AREA, 0), end_pos=(AREA, AREA), color=(128, 128, 128))
 
     #print(memory)
-    tb1f = lambda x: (1.0 + np.cos(np.pi + x - heading)) / 2.0
-    graph(display, "TB1", tb1f, (20, AREA - 150), (AREA - 40, 300), (0, 2 * np.pi), points=[(x * (2 * np.pi / 8), y) for x, y in enumerate(tb1)])
-    graph(display, "CPU4", lambda x: model(decoded_polar, x), (20, AREA - 500), (AREA - 40, 380), (0, 2 * np.pi), (-0.32, 0.32), points=[(n / 16 * 2 * np.pi, y) for n, y in enumerate((cpu4 - 0.5) * 2.0)])
+    graph(display, "TB1 / Delta7", lambda x: tb1_model(np.array([decoded_angle]), x), (20, AREA - 30), (AREA - 40, 300), (0, 2 * np.pi), points=[(x * (2 * np.pi / 8), y) for x, y in enumerate(tb1)])
+    graph(display, "CPU4 / P-FN", lambda x: cpu4_model(decoded_polar, x), (20, AREA - 380), (AREA - 40, 380), (0, 2 * np.pi), (-0.32, 0.32), points=[(n / 16 * 2 * np.pi, y) for n, y in enumerate((cpu4 - 0.5) * 2.0)])
 
     debug_text = font.render(f"Homing: {homing} | True distance from home: {np.linalg.norm(position):.02f} | Perceived distance from home: {np.linalg.norm(decoded):.02f}", False, (255, 255, 255))
     display.blit(debug_text, (8, 8))
