@@ -1,28 +1,13 @@
 # type: ignore
 
 import random
+from matplotlib import animation
 import pygame
 import math
 import numpy as np
+
 from pygame.locals import *
 from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
-
-pygame.init()
-
-AREA = math.floor(1920 / 2.1)
-WINDOW_SIZE = (2 * AREA, AREA)
-
-MAX_SPEED = 1.0
-MAX_ANGULAR_SPEED = 3.0
-TURN_SHARPNESS = 1.0
-
-display = pygame.display.set_mode(WINDOW_SIZE)
-pygame.display.set_caption("Interactive Bee Simulator")
-
-running = True
-
-position = np.array([0.0, 0.0])
-heading = 0.0
 
 def world_to_screen(pos):
     pos = np.array([1.0, -1.0]) * 0.1 * pos
@@ -51,6 +36,37 @@ def graph(display, title, f, origin, size, xaxis, yaxis = (-1.0, 1.0), points = 
     for p in points:
         if xaxis[0] <= p[0] <= xaxis[1] and yaxis[0] <= p[1] <= yaxis[1]:
             pygame.draw.circle(surface=display, center=origin + (p[0] / xscale, -p[1] / yscale), color=(255, 0, 0), radius=4)
+
+
+def get_image(sheet, frame, width=23, height=23, scale=1.0):
+    image = pygame.Surface((width, height), pygame.SRCALPHA)
+    image.blit(sheet, (0, 0), area=(frame * width, 0, width, height))
+    image = pygame.transform.scale(image, (width * scale, height * scale))
+    return image
+
+
+pygame.init()
+
+AREA = math.floor(1920 / 2.1)
+WINDOW_SIZE = (2 * AREA, AREA)
+
+MAX_SPEED = 1.0
+MAX_ANGULAR_SPEED = 3.0
+TURN_SHARPNESS = 1.0
+
+display = pygame.display.set_mode(WINDOW_SIZE)
+pygame.display.set_caption("Interactive Bee Simulator")
+
+# load sprites for bee animation
+sprite_sheet_image = pygame.image.load('sprites/bee_11.png').convert_alpha()
+animation_list = [get_image(sprite_sheet_image, frame, scale=2) for frame in range(11)]
+last_update = pygame.time.get_ticks()
+current_frame = 0
+
+running = True
+
+position = np.array([0.0, 0.0])
+heading = 0.0
 
 homing = False
 auto = False
@@ -118,7 +134,9 @@ while running:
         # Is this where we went wrong? trials.py line 138, 139
         tl2, cl1, tb1, tn1, tn2, memory, cpu4, cpu1, motor = trials.update_cells(heading, np.flip(velocity), tb1, memory, cx)
 
-    display.fill((0,0,0))
+    # background of window
+    display.fill((50,50,50))
+
 
     # Draw bee
     decoded_polar = cx.decode_cpu4(cx.cpu4_output(memory)) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
@@ -126,20 +144,25 @@ while running:
         np.cos(decoded_polar[0]),
         np.sin(decoded_polar[0]),
     ]) * decoded_polar[1] * 1.0
-    #print(decoded)
+
+    # animate bee
+    current_time = pygame.time.get_ticks()
+    if current_time - last_update >= 80:
+        current_frame = (current_frame + 1) % len(animation_list)
+        last_update = current_time
+
+    # rotate bee
+    frame_copy = pygame.transform.rotate(animation_list[current_frame], np.degrees(heading) - 90)
+    center_position = tuple(map(lambda i, j: i-j, world_to_screen(position), (int(frame_copy.get_width() / 2), int(frame_copy.get_height() / 2))))
+    display.blit(frame_copy, center_position)
 
     pygame.draw.circle(surface=display, center=world_to_screen(decoded), color=(128, 128, 0), radius=8)
     pygame.draw.line(surface=display, start_pos=world_to_screen(decoded), end_pos=world_to_screen(decoded + direction * 0.1), color=(128, 128, 128))
 
-    pygame.draw.line(surface=display, start_pos=world_to_screen((0, 0)), end_pos=world_to_screen(position), color=(128, 128, 128))
-    pygame.draw.circle(surface=display, center=world_to_screen(position), color=(255, 255, 0), radius=8)
-    pygame.draw.line(surface=display, start_pos=world_to_screen(position), end_pos=world_to_screen(position + direction * 0.07), color=(128, 128, 128))
-    pygame.draw.line(surface=display, start_pos=world_to_screen(position + direction * 0.07), end_pos=world_to_screen(position + direction * 0.07 + np.array([np.cos(heading + 3/4*np.pi),np.sin(heading + 3/4*np.pi)]) * 0.03), color=(128, 128, 128))
-    pygame.draw.line(surface=display, start_pos=world_to_screen(position + direction * 0.07), end_pos=world_to_screen(position + direction * 0.07 + np.array([np.cos(heading - 3/4*np.pi),np.sin(heading - 3/4*np.pi)]) * 0.03), color=(128, 128, 128))
-
+    pygame.draw.line(surface=display, start_pos=world_to_screen((0, 0)), end_pos=world_to_screen(position), color=(128, 128, 128))    
     pygame.draw.line(surface=display, start_pos=(AREA, 0), end_pos=(AREA, AREA), color=(128, 128, 128))
 
-    print(memory)
+    # print(memory)
     tb1f = lambda x: (1.0 + np.cos(np.pi + x + heading)) / 2.0
     graph(display, "TB1", tb1f, (20, AREA - 70), (AREA - 40, 100), (0, 2 * np.pi), points=[(x * (2 * np.pi / 8), y) for x, y in enumerate(tb1)])
     graph(display, "CPU4", lambda x: 0.5, (20, AREA - 200), (AREA - 40, 100), (0, 16), (-0.02, 0.02), points=[(n, y) for n, y in enumerate(memory - 0.5)])
