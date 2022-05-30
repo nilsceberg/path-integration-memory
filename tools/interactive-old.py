@@ -113,8 +113,8 @@ font = pygame.font.SysFont("Monospace", 16)
 clock = pygame.time.Clock()
 
 # TB and memory:
-#cx = cx_basic.CXBasic()
-cx = cx_rate.CXRate(0.1)
+cx = cx_basic.CXBasicFlipped()
+#cx = cx_rate.CXRate(0.1)
 #cx = cx_rate.CXRatePontin(0.1)
 tb1 = np.zeros(central_complex.N_TB1)
 memory = 0.5 * np.ones(central_complex.N_CPU4)
@@ -173,22 +173,22 @@ while running:
         position += velocity
         # Is this where we went wrong? trials.py line 138, 139
 
-    h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
-    v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
-    tl2, cl1, tb1, tn1, tn2, memory, cpu4, cpu1, motor = trials.update_cells(h, v, tb1, memory, cx)
-    #motor = -motor
+        h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
+        v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
+        tl2, cl1, tb1, tn1, tn2, memory, cpu4, cpu1, motor = trials.update_cells(h, v, tb1, memory, cx)
+        #motor = -motor
 
-    #decoded_polar = cx.decode_cpu4(cpu4) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
-    #last_decoded = (last_decoded + [np.array([
-    #    np.cos(decoded_polar[0]),
-    #    -np.sin(decoded_polar[0]),
-    #]) * decoded_polar[1] * 0.10])[-1:]
+        #decoded_polar = cx.decode_cpu4(cpu4) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
+        #last_decoded = (last_decoded + [np.array([
+        #    np.cos(decoded_polar[0]),
+        #    -np.sin(decoded_polar[0]),
+        #]) * decoded_polar[1] * 0.10])[-1:]
 
-    decoded_polar = decode_cpu4(cpu4) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
-    last_decoded = (last_decoded + [np.array([
-        np.cos(decoded_polar[1] + np.pi),
-        -np.sin(decoded_polar[1] + np.pi),
-    ]) * decoded_polar[0] * 300.0])[-16:]
+        decoded_polar = decode_cpu4(cpu4) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
+        last_decoded = (last_decoded + [np.array([
+            np.cos(decoded_polar[1] + np.pi),
+            -np.sin(decoded_polar[1] + np.pi),
+        ]) * decoded_polar[0] * 300.0])[-16:]
 
     decoded = np.mean(np.array(last_decoded), 0)
     decoded_angle = decode_tb1(tb1)
