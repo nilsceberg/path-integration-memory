@@ -1,117 +1,103 @@
 from abc import abstractmethod
-from typing import Any, Callable
+from typing import Callable, Dict, List, Union
 import numpy as np
 
-class Layer:
-    """Base class for CX model layers.
-    Layers are allowed to have internal state."""
+class Network:
+    def __init__(self, layers: Dict[str, "Layer"]):
+        self.layers = layers
 
+    def reset(self):
+        for name, layer in self.layers.items():
+            layer.reset()
+
+    def step(self, dt: float, query: List[str]) -> List[np.ndarray]:
+        for name, layer in self.layers.items():
+            layer.begin()
+
+        return [self.layers[layer].output(self, dt) for layer in query]
+
+    def __getitem__(self, name: str) -> "Layer":
+        return self.layers[name]
+
+
+class Trap():
+    @staticmethod
+    def check(value):
+        if isinstance(value, Trap):
+            raise RuntimeError("dependency on uninitialized layer (cyclic?)")
+        else:
+            return value
+
+
+class Layer:
     def __init__(self):
-        self._output = np.array([])
+        self.reset()
 
     @abstractmethod
-    def step(self, dt: float):
-        """Runs one timestep. Note that this method is allowed to have side effects."""
+    def reset(self):
         pass
 
     @abstractmethod
-    def output(self) -> np.ndarray:
-        return self._output
+    def begin(self):
+        pass
+
+    @abstractmethod
+    def output(self, network: Network, dt: float) -> np.ndarray:
+        pass
+
+
+class TimeSteppedLayer(Layer):
+    def __init__(self, initial: Union[Trap, np.ndarray] = Trap()):
+        self.initial = initial
+        super().__init__()
+
+    def reset(self):
+        self.previous_activity = None
+        self.activity = self.initial
+
+    @abstractmethod
+    def evaluate(self, network: Network, dt: float) -> np.ndarray:
+        pass
+
+    def begin(self):
+        self.previous_activity = self.activity
+        self.activity = None
+
+    def output(self, network: Network, dt: float) -> np.ndarray:
+        if self.activity is not None:
+            return Trap.check(self.activity)
+        else:
+            # Ensure that any recurrences see the last value of this layer.
+            self.activity = self.previous_activity
+            self.activity = self.evaluate(network, dt)
+            return self.activity
+        
+
+class FunctionLayer(TimeSteppedLayer):
+    def __init__(self, inputs: Union[str, List[str]], function, initial: Union[Trap, np.ndarray] = Trap()):
+        super().__init__(initial)
+        self.function = function
+        self.inputs = inputs
+
+    def evaluate(self, network: Network, dt: float) -> np.ndarray:
+        if isinstance(self.inputs, str):
+            inputs = network[self.inputs].output(network, dt)
+        else:
+            inputs = [network[layer].output(network, dt) for layer in self.inputs]
+        return self.function(inputs)
+
+
+def IdentityLayer(input):
+    return FunctionLayer(input, lambda x: x)
 
 
 class InputLayer(Layer):
     def __init__(self):
-        pass
+        super().__init__()
+        self.input = Trap()
 
-    def input(self, activity: np.ndarray):
-        self._output = activity
+    def set_input(self, input: np.ndarray):
+        self.input = input
 
-
-class InputOutputLayer(Layer):
-    @abstractmethod
-    def input(self, input: Layer):
-        pass
-
-
-class FunctionLayer(InputOutputLayer):
-    def __init__(self, function: Callable[[np.ndarray], np.ndarray]):
-        self.function = function
-        self._input = np.array([])
-
-    def step(self, dt: float):
-        self._output = self.function(self._input)
-
-    def input(self, layer: Layer):
-        self._input = layer.output()
-
-    def output(self):
-        return self._output
-
-
-class IdentityLayer(FunctionLayer):
-    def __init__(self):
-        super(IdentityLayer, self).__init__(lambda x: x)
-
-
-# Temporary home for reimplementation of Stone:
-N_COLUMNS = 8  # Number of columns
-x = np.linspace(0, 2 * np.pi, N_COLUMNS, endpoint=False)
-
-def tb1_output(theta):
-    """Sinusoidal response to solar compass."""
-    return (1.0 + np.cos(np.pi + x + theta)) / 2.0
-
-def tn1_output(flow):
-    """Linearly inverse sensitive to forwards and backwards motion."""
-    return np.clip((1.0 - flow) / 2.0, 0, 1)
-
-def tn2_output(flow):
-    """Linearly sensitive to forwards motion only."""
-    return np.clip(flow, 0, 1)
-
-class StoneCX:
-    def __init__(self):
-        self.input = InputLayer()
-        self.tl2 = IdentityLayer()
-        self.cl1 = IdentityLayer()
-        self.tb1 = FunctionLayer(tb1_output)
-        self.tn1 = FunctionLayer(tn1_output)
-        self.tn2 = FunctionLayer(tn2_output)
-        self.cpu4 = CPU4Layer()
-        self.cpu1 = CPU1Layer()
-        self.motor = MotorLayer()
-
-    def step(self, dt, theta, flow):
-        self.input.input(np.array([theta]))
-        self.input.step(dt)
-
-        self.tl2.input(theta)
-        self.tl2.step(dt)
-
-        self.cl1.input(self.tl2)
-        self.cl1.step(dt)
-
-        self.tb1.input(self.cl1)
-        self.tb1.input(self.tb1)
-        self.tb1.step(dt)
-
-        self.tn1.input(flow)
-        self.tn1.step(dt)
-
-        self.tn2.input(flow)
-        self.tn2.step(dt)
-
-        self.cpu4.input(self.tb1)
-        self.cpu4.input(self.tn1)
-        self.cpu4.input(self.tn2)
-        self.cpu4.step(dt)
-
-        self.cpu1.input(self.tb1)
-        self.cpu1.input(self.cpu4)
-        self.cpu1.step(dt)
-
-        self.motor.input(self.cpu1)
-        self.motor.step(dt)
-
-        motor = self.motor.output()
-
+    def output(self, network: Network, dt: float) -> np.ndarray:
+        return Trap.check(self.input)

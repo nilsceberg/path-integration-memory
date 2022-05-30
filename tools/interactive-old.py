@@ -8,41 +8,8 @@ import numpy as np
 from loguru import logger
 from pygame.locals import *
 from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
+from pim.models.new import stone
 import scipy
-
-def cpu4_model(args, x):
-    return args[0] * np.cos(np.pi + 2*x + args[1])
-
-def tb1_model(args, x):
-    return 0.5 + np.cos(np.pi + x + args[0]) * 0.5
-
-def error_gradient(data, m, r, theta):
-    x = np.linspace(0, 2*np.pi, data.size, endpoint=False)
-    return (
-        np.sum(2 * (data - m(x))*(-np.cos(np.pi + x + theta))),
-        np.sum(2 * (data - m(x))*(r*np.sin(np.pi + x + theta)))
-    )
-
-def fit_cpu4(data):
-    xs = np.linspace(0, 2*np.pi, central_complex.N_CPU4, endpoint = False)
-    error = lambda args: cpu4_model(args, xs) - data
-    params, _ = scipy.optimize.leastsq(error, np.array([0.1, 0.01]))
-    return params
-
-def fit_tb1(data):
-    xs = np.linspace(0, 2*np.pi, central_complex.N_TB1, endpoint = False)
-    error = lambda args: tb1_model(args, xs) - data
-    params, _ = scipy.optimize.leastsq(error, np.array([0.1]))
-    return params
-
-def decode_cpu4(cpu4_output):
-    cpu4_normalized = (cpu4_output - 0.5)*2.0
-    params = fit_cpu4(cpu4_normalized)
-    return params
-
-def decode_tb1(tb1_output):
-    heading = fit_tb1(tb1_output)[0]
-    return heading
 
 def world_to_screen(pos):
     pos = np.array([1.0, -1.0]) * 0.01 * pos
@@ -112,16 +79,11 @@ pygame.font.init()
 font = pygame.font.SysFont("Monospace", 16)
 clock = pygame.time.Clock()
 
-# TB and memory:
-cx = cx_basic.CXBasicFlipped()
-#cx = cx_rate.CXRate(0.1)
-#cx = cx_rate.CXRatePontin(0.1)
-tb1 = np.zeros(central_complex.N_TB1)
-memory = 0.5 * np.ones(central_complex.N_CPU4)
-#memory = CPU4Memory()
-cpu4 = np.copy(memory)
+# Central complex:
+cx = stone.CentralComplex()
 motor = 0
-last_decoded = []
+last_estimates = []
+estimate_scaling = 600.0
 
 decoded_polar = np.array([0, 0])
 while running:
@@ -173,25 +135,16 @@ while running:
         position += velocity
         # Is this where we went wrong? trials.py line 138, 139
 
-        h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
-        v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
-        tl2, cl1, tb1, tn1, tn2, memory, cpu4, cpu1, motor = trials.update_cells(h, v, tb1, memory, cx)
-        #motor = -motor
+    h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
+    v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
 
-        #decoded_polar = cx.decode_cpu4(cpu4) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
-        #last_decoded = (last_decoded + [np.array([
-        #    np.cos(decoded_polar[0]),
-        #    -np.sin(decoded_polar[0]),
-        #]) * decoded_polar[1] * 0.10])[-1:]
+    motor = cx.update(0.0, h, v)
 
-        decoded_polar = decode_cpu4(cpu4) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
-        last_decoded = (last_decoded + [np.array([
-            np.cos(decoded_polar[1] + np.pi),
-            -np.sin(decoded_polar[1] + np.pi),
-        ]) * decoded_polar[0] * 300.0])[-16:]
+    estimated_polar = cx.estimate_position()
 
-    decoded = np.mean(np.array(last_decoded), 0)
-    decoded_angle = decode_tb1(tb1)
+    last_estimates = (last_estimates + [cx.to_cartesian(estimated_polar) * estimate_scaling])[-16:]
+    estimated_position = np.mean(np.array(last_estimates), 0)
+    estimated_heading = cx.estimate_heading()
 
     # background of window
     display.fill((50,50,50))
@@ -207,8 +160,8 @@ while running:
     pygame.draw.line(surface=display, start_pos=world_to_screen((0, 0)), end_pos=world_to_screen(position), color=(128, 128, 128))    
 
     # rotate bee
-    frame_copy = pygame.transform.rotate(animation_list[current_frame], np.degrees(-decoded_angle) - 90)
-    center_position = tuple(map(lambda i, j: i-j, world_to_screen(decoded), (int(frame_copy.get_width() / 2), int(frame_copy.get_height() / 2))))
+    frame_copy = pygame.transform.rotate(animation_list[current_frame], np.degrees(estimated_heading) - 90)
+    center_position = tuple(map(lambda i, j: i-j, world_to_screen(estimated_position), (int(frame_copy.get_width() / 2), int(frame_copy.get_height() / 2))))
     frame_copy.set_alpha(128)
     display.blit(frame_copy, center_position)
     frame_copy = pygame.transform.rotate(animation_list[current_frame], np.degrees(heading) - 90)
@@ -223,10 +176,10 @@ while running:
     pygame.draw.line(surface=display, start_pos=(AREA, 0), end_pos=(AREA, AREA), color=(128, 128, 128))
 
     #print(memory)
-    graph(display, "TB1 / Delta7", lambda x: tb1_model(np.array([decoded_angle]), x), (20, AREA - 30), (AREA - 40, 300), (0, 2 * np.pi), points=[(x * (2 * np.pi / 8), y) for x, y in enumerate(tb1)])
-    graph(display, "CPU4 / P-FN", lambda x: cpu4_model(decoded_polar, x), (20, AREA - 380), (AREA - 40, 380), (0, 2 * np.pi), (-0.32, 0.32), points=[(n / 16 * 2 * np.pi, y) for n, y in enumerate((cpu4 - 0.5) * 2.0)])
+    graph(display, "TB1 / Delta7", lambda x: stone.tb1_model(np.array([estimated_heading]), x), (20, AREA - 30), (AREA - 40, 300), (0, 2 * np.pi), points=[(x * (2 * np.pi / 8), y) for x, y in enumerate(cx.tb1)])
+    graph(display, "CPU4 / P-FN", lambda x: stone.cpu4_model(estimated_polar, x) * 2.0, (20, AREA - 380), (AREA - 40, 380), (0, 2 * np.pi), (-0.32, 0.32), points=[(n / 16 * 2 * np.pi, y) for n, y in enumerate((cx.cpu4 - 0.5) * 2.0)])
 
-    debug_text = font.render(f"Homing: {homing} | True distance from home: {np.linalg.norm(position):.02f} | Perceived distance from home: {np.linalg.norm(decoded):.02f}", False, (255, 255, 255))
+    debug_text = font.render(f"Homing: {homing} | True distance from home: {np.linalg.norm(position):.02f} | Perceived distance from home: {np.linalg.norm(estimated_position):.02f}", False, (255, 255, 255))
     display.blit(debug_text, (8, 8))
 
     pygame.display.update()
