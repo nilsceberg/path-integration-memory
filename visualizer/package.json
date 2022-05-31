@@ -17,6 +17,7 @@
     "react-scripts": "5.0.1",
     "react-use-websocket": "^4.2.0",
     "recharts": "^2.1.10",
+    "usehooks-ts": "^2.5.4",
     "web-vitals": "^2.1.0"
   },
   "scripts": {

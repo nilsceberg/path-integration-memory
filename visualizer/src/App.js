@@ -1,8 +1,9 @@
 import useWebSocket from "react-use-websocket";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CssBaseline} from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import GridLayout, { WidthProvider } from "react-grid-layout";
+import { useInterval } from "usehooks-ts";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -28,11 +29,11 @@ function Window(props) {
 }
 
 function Controls(props) {
-    const { sendJsonMessage, readyState, state } = props;
+    const { sendJsonMessage, readyState, state, dataRate } = props;
     if (readyState === 1) {
         return (
             <>
-                connected
+                data rate: {(dataRate / 1000 * 8).toFixed(0)}&nbsp;kb/s
             </>
         );
     }
@@ -48,6 +49,7 @@ function Controls(props) {
 function App() {
     const {
         sendJsonMessage,
+        lastMessage,
         lastJsonMessage,
         readyState
     } = useWebSocket("ws://localhost:8001", {
@@ -56,6 +58,15 @@ function App() {
         reconnectAttempts: 10000000,
         shouldReconnect: () => true,
     });
+
+    const [bytesReceived, setBytesReceived] = useState(0);
+    const [dataRate, setDataRate] = useState(0);
+
+    useEffect(() => setBytesReceived(bytesReceived + (lastMessage?.data.length || 0)), [lastMessage]);
+    useInterval(() => {
+        setDataRate(bytesReceived);
+        setBytesReceived(0);
+    }, 1000);
 
     const state = lastJsonMessage;
 
@@ -73,7 +84,7 @@ function App() {
 
     const windows = {
         controls: <Window title="Controls">
-            <Controls state={state} readyState={readyState} sendJsonMessage={sendJsonMessage}/>
+            <Controls state={state} readyState={readyState} sendJsonMessage={sendJsonMessage} dataRate={dataRate}/>
         </Window>,
         world: <Window title="World">
             <World state={state}/>
