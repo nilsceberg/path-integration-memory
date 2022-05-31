@@ -34,9 +34,10 @@ async def perform_socket_io(connection_uuid, socket, io, args = None):
         return await io(socket, connection_uuid, args)
 
     except Exception as e:
-        logger.debug("connection closed: {} ({}) - {}", connection_uuid, socket.remote_address, e)
-        logger.debug("removed connection {}", connection_uuid)
-        connections.pop(connection_uuid)
+        if connection_uuid in connections:
+            logger.debug("connection closed: {} ({}) - {}", connection_uuid, socket.remote_address, e)
+            logger.debug("removed connection {}", connection_uuid)
+            connections.pop(connection_uuid)
 
         return None
 

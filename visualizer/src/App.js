@@ -6,21 +6,43 @@ import GridLayout, { WidthProvider } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
+import World from "./World";
+import Layers from "./Layers";
+
 const Grid = WidthProvider(GridLayout);
 
 function Window(props) {
     const { title, children, sx } = props;
     return (
-        <Card sx={{ weight: "100%", height: "100%", ...sx }}>
+        <Card sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", ...sx }}>
             <CardHeader className="windowResizeHandle" sx={{
                     background: theme =>
                         theme.palette.mode === "light"
                         ? theme.palette.grey[200]
-                        : theme.palette.grey[800],
-                }} title={title}/>
-            <CardContent>{ children }</CardContent>
+                        : theme.palette.grey[900],
+                    padding: "4px",
+                }} subheader={title}/>
+            <CardContent sx={{ flexGrow: "1" }}>{ children }</CardContent>
         </Card>
     );
+}
+
+function Controls(props) {
+    const { sendJsonMessage, readyState, state } = props;
+    if (readyState === 1) {
+        return (
+            <>
+                connected
+            </>
+        );
+    }
+    else {
+        return (
+            <>
+                disconnected
+            </>
+        );
+    }
 }
 
 function App() {
@@ -37,13 +59,10 @@ function App() {
 
     const state = lastJsonMessage;
 
-    const bee = state
-        ? <div style={{ width: 8, height: 8, background: "black", position: 'fixed', left: 200 + 10 * state.position[0], top: 200 - 10 * state.position[1] }}/>
-        : null;
-
     const layout = [
-        { i: "world", x: 0, y: 0, w: 6, h: 6 },
-        { i: "layers", x: 6, y: 0, w: 6, h: 6 },
+        { i: "controls", x: 0, y: 0, w: 12, h: 1 },
+        { i: "world", x: 0, y: 1, w: 6, h: 5 },
+        { i: "layers", x: 6, y: 1, w: 6, h: 5 },
     ];
 
     const theme = createTheme({
@@ -53,18 +72,21 @@ function App() {
     });
 
     const windows = {
+        controls: <Window title="Controls">
+            <Controls state={state} readyState={readyState} sendJsonMessage={sendJsonMessage}/>
+        </Window>,
         world: <Window title="World">
-            content
+            <World state={state}/>
         </Window>,
         layers: <Window title="Layers">
-            content
+            <Layers state={state}/>
         </Window>,
     };
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline/>
-            <Grid layout={layout} cols={12} draggableHandle=".windowResizeHandle" isResizable>
+            <Grid layout={layout} cols={12} rowHeight={120} draggableHandle=".windowResizeHandle" isResizable>
                 {Object.entries(windows).map(([key, window]) => <div key={key}>{window}</div>)}
             </Grid>
         </ThemeProvider>
