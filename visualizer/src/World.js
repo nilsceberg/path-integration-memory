@@ -9,6 +9,9 @@ export default function World(props) {
     const [x, y] = state.position;
     const heading = state.decoded_heading * 180 / Math.PI + 90;
 
+    const width = 40;
+    const height = 40;
+
     return (
         <Paper elevation={0} sx={{ width: "100%", height: "100%", backgroundColor: "#323232" }}>
             <Spritesheet
@@ -23,11 +26,12 @@ export default function World(props) {
                     position: "absolute",
                     left: "50%",
                     top: "50%",
-                    width: "40px",
-                    height: "40px",
-                    marginLeft: -8 + x * 5,
-                    marginTop: -8 - y * 5,
-                    transform: `rotate(${heading.toFixed(0)}deg)`
+                    width: `${width}px`,
+                    height: `${height}px`,
+                    marginLeft: -width/2 + x * 5,
+                    marginTop: -height/2 - y * 5,
+                    transform: `rotate(${heading.toFixed(0)}deg)`,
+                    transformOrigin: '50% 50%',
                 }}/>
         </Paper>
     )
