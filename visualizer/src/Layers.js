@@ -6,20 +6,22 @@ export default function Layers(props) {
 
     const [update, setUpdate] = useState(0);
 
-    useEffect(() => {
-        const timeout = setTimeout(() => setUpdate(update + 1), 250);
-        return () => clearTimeout(timeout);
-    }, [update])
+    //useEffect(() => {
+    //    const timeout = setTimeout(() => setUpdate(update + 1), 250);
+    //    return () => clearTimeout(timeout);
+    //}, [update])
 
-    const tb1 = useMemo(
-        () => state?.tb1 || [],
-        [update]
-    );
+    //const tb1 = useMemo(
+    //    () => state?.tb1 || [],
+    //    [update]
+    //);
 
-    const cpu4 = useMemo(
-        () => state?.cpu4 || [],
-        [update]
-    );
+    //const cpu4 = useMemo(
+    //    () => state?.cpu4 || [],
+    //    [update]
+    //);
+
+    const { tb1, cpu4 } = state;
 
     return (
         <>
