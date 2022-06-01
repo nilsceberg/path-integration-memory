@@ -30,12 +30,20 @@ function Window(props) {
 }
 
 function Controls(props) {
-    const { sendJsonMessage, readyState, state, dataRate } = props;
+    const { sendJsonMessage, readyState, state, dataRate, fps, tps } = props;
     if (readyState === 1) {
         return (
-            <>
-                data rate: {(dataRate / 1000 * 8).toFixed(0)}&nbsp;kb/s
-            </>
+            <div id="debugInfo">
+                <div style={{ width: 200 }}>
+                    data rate: {(dataRate / 1000 * 8).toFixed(0)}&nbsp;kb/s
+                </div>
+                <div style={{ width: 200 }}>
+                    framerate: {fps}&nbsp;Hz
+                </div>
+                <div style={{ width: 300 }}>
+                    server framerate: {tps}&nbsp;Hz
+                </div>
+            </div>
         );
     }
     else {
@@ -63,15 +71,30 @@ function App() {
     const [bytesReceived, setBytesReceived] = useState(0);
     const [dataRate, setDataRate] = useState(0);
 
-    useEffect(() => setBytesReceived(bytesReceived + (lastMessage?.data.length || 0)), [lastMessage]);
+    const [frames, setFrames] = useState(0);
+    const [ticks, setTicks] = useState(0);
+
+    const [fps, setFps] = useState(0);
+    const [tps, setTps] = useState(0);
+
+    useEffect(() => {
+        setBytesReceived(bytesReceived + (lastMessage?.data.length || 0));
+        setTicks(ticks + 1);
+    }, [lastMessage]);
+
     useInterval(() => {
         setDataRate(bytesReceived);
+        setFps(frames);
+        setTps(ticks);
         setBytesReceived(0);
+        setFrames(0);
+        setTicks(0);
     }, 1000);
 
     const [state, setState] = useState(null);
     useAnimationFrame(() => {
         setState(lastJsonMessage);
+        setFrames(frames + 1);
     }, [lastJsonMessage]);
 
     const layout = [
@@ -88,7 +111,7 @@ function App() {
 
     const windows = useMemo(() => ({
         controls: <Window title="Controls">
-            <Controls state={state} readyState={readyState} sendJsonMessage={sendJsonMessage} dataRate={dataRate}/>
+            <Controls state={state} readyState={readyState} sendJsonMessage={sendJsonMessage} dataRate={dataRate} tps={tps} fps={fps}/>
         </Window>,
         world: <Window title="World">
             <World state={state}/>

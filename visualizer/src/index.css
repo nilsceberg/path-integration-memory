@@ -35,3 +35,14 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+#debugInfo {
+  display: flex;
+  flex-direction: row;
+  color: gray;
+}
+
+#debugInfo > div:not(:first-child) {
+  border-left: 1px solid gray;
+  padding-left: 20px;
+}
