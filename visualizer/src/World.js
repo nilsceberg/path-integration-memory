@@ -7,7 +7,7 @@ export default function World(props) {
     if (!state) return null;
 
     const [x, y] = state.position;
-    const heading = Math.round(state.decoded_heading * 180 / Math.PI) + 90;
+    const heading = state.decoded_heading * 180 / Math.PI + 90;
 
     return (
         <Paper elevation={0} sx={{ width: "100%", height: "100%", backgroundColor: "#323232" }}>
@@ -27,7 +27,7 @@ export default function World(props) {
                     height: "40px",
                     marginLeft: -8 + x * 5,
                     marginTop: -8 - y * 5,
-                    transform: `rotate(${heading}deg)`
+                    transform: `rotate(${heading.toFixed(0)}deg)`
                 }}/>
         </Paper>
     )

@@ -1,5 +1,6 @@
 import useWebSocket from "react-use-websocket";
-import { useEffect } from "react";
+import { useMemo, useState } from "react";
+import useAnimationFrame from "use-animation-frame";
 import { Card, CardContent, CardHeader, CssBaseline} from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import GridLayout, { WidthProvider } from "react-grid-layout";
@@ -57,7 +58,10 @@ function App() {
         shouldReconnect: () => true,
     });
 
-    const state = lastJsonMessage;
+    const [state, setState] = useState(null);
+    useAnimationFrame(() => {
+        setState(lastJsonMessage);
+    }, [lastJsonMessage]);
 
     const layout = [
         { i: "controls", x: 0, y: 0, w: 12, h: 1 },
@@ -71,7 +75,7 @@ function App() {
         }
     });
 
-    const windows = {
+    const windows = useMemo(() => ({
         controls: <Window title="Controls">
             <Controls state={state} readyState={readyState} sendJsonMessage={sendJsonMessage}/>
         </Window>,
@@ -81,7 +85,7 @@ function App() {
         layers: <Window title="Layers">
             <Layers state={state}/>
         </Window>,
-    };
+    }), [state, readyState, sendJsonMessage]);
 
     return (
         <ThemeProvider theme={theme}>
