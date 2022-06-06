@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from typing import Any, Union
 
 
 class Network:
@@ -32,17 +33,44 @@ class Connection:
         raise NotImplementedError
 
     @abstractmethod
+    def get_endpoint(self) -> Union[None, str]:
+        return None
+
+    @abstractmethod
     def function(self, value):
         raise NotImplementedError
 
 class Layer:
-    def __init__(self, name):
+    def __init__(self, name, initial_input = 0.0):
         self.name = name
-        self.last_output = None
+        self.next_inputs = None # type: Any
+        self.inputs = None
+        self.output = None
+        self.initial_input = initial_input
 
-    def step(self, input):
-        self.last_output = self.update(input)
-        return self.last_output
+    def begin(self):
+        self.inputs = self.next_inputs
+        self.next_inputs = None
+
+    def step(self):
+        self.output = self.update(self.inputs if self.inputs is not None else self.initial_input)
+        return self.output
+
+    def input(self, value, endpoint=None):
+        if endpoint:
+            if self.next_inputs is None:
+                self.next_inputs = {}
+            elif type(self.next_inputs) != dict:
+                raise RuntimeError("combined endpoint connections with non-endpoint connections")
+
+            if endpoint not in self.next_inputs:
+                self.next_inputs[endpoint] = self.initial_input
+            self.next_inputs[endpoint] = self.reduce(self.next_inputs[endpoint], value)
+        else:
+            self.next_inputs = self.reduce(self.next_inputs if self.next_inputs is not None else self.initial_input, value)
+
+    def reduce(self, a, b):
+        return a + b
 
     @abstractmethod
     def update(self, input):
@@ -51,7 +79,7 @@ class Layer:
 
 class InputLayer(Layer):
     def __init__(self, name):
-        self.name = name
+        super().__init__(name)
         self.value = None
 
     def set(self, value):
@@ -60,11 +88,27 @@ class InputLayer(Layer):
     def update(self, input):
         return self.value
 
+class FunctionLayer(Layer):
+    def __init__(self, name, f):
+        super().__init__(name)
+        self.f = f
+
+    def update(self, input):
+        return self.f(input)
+
+class IdentityLayer(FunctionLayer):
+    def __init__(self, name):
+        super().__init__(name, lambda x: x) 
+
 class WeightedConnection(Connection):
-    def __init__(self, pre, post, weight = 1.0):
+    def __init__(self, pre, post, weight = 1.0, endpoint = None):
         self.pre = pre
         self.post = post
         self.weight = weight
+        self.endpoint = endpoint
+
+    def get_endpoint(self):
+        return self.endpoint
 
     def is_pre(self, layer):
         return self.pre == layer.name
@@ -82,18 +126,13 @@ class WeightedConnection(Connection):
 class RecurrentNetwork(Network):
     def __init__(self):
         super().__init__()
-
-        self.inputs = {}
     
     def step(self, dt = 1):
-        next_inputs = {}
+        for layer in self.layers.values():
+            layer.begin()
 
         for layer in self.layers.values():
-            output = layer.step(self.inputs[layer.name] if layer.name in self.inputs else 0.0)
+            output = layer.step()
             for connection in [connection for connection in self.connections if connection.is_pre(layer)]:
                 for post_layer in connection.get_post(self):
-                    if post_layer.name not in next_inputs:
-                        next_inputs[post_layer.name] = 0
-                    next_inputs[post_layer.name] += connection.function(output)
-
-        self.inputs = next_inputs
+                    post_layer.input(connection.function(output), connection.get_endpoint())
