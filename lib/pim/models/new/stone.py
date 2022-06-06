@@ -31,6 +31,48 @@ def tn2_output(flow):
     """Linearly sensitive to forwards motion only."""
     return np.clip(flow, 0, 1)
 
+def bistable_neuron(Idown, Iup):
+    state = 0
+    def f(x):
+        nonlocal state
+        if x >= Iup:
+            state = 1
+        elif x <= Idown:
+            state = 0            
+        return state
+    return f
+
+def cpu4_bistable_output(cpu4_mem_gain, N, dI, mI):
+    columns = [[bistable_neuron(I_up-dI, I_up) for I_up in np.linspace((mI-dI)/N, mI, N)] for i in range(N_CPU4)]
+
+    def closure(inputs):
+        """Updates memory based on current TB1 and TN activity.
+        Can think of this as summing sinusoid of TB1 onto sinusoid of CPU4.
+        cpu4[0-7] store optic flow peaking at left 45 deg
+        cpu[8-15] store optic flow peaking at right 45 deg."""
+        cpu4_mem, tb1, tn1, tn2 = inputs
+        cpu4_mem_reshaped = cpu4_mem.reshape(2, -1)
+
+        # Idealised setup, where we can negate the TB1 sinusoid
+        # for memorising backwards motion
+        mem_update = (0.5 - tn1.reshape(2, 1)) * (1.0 - tb1)
+
+        # Both CPU4 waves must have same average
+        # If we don't normalise get drift and weird steering
+        mem_update -= 0.5 * (0.5 - tn1.reshape(2, 1))
+
+        # Input to memory layer is now feedback connection + update 
+        mem_update = mem_update.reshape(-1)
+        inputs = cpu4_mem + mem_update * cpu4_mem_gain
+
+        activity = np.array([[neuron(x) for neuron in column] for (column, x) in zip(columns, inputs)])
+        output = np.sum(activity, 1) / N * mI
+        print(output)
+
+        return output
+
+    return closure
+
 def cpu4_output(cpu4_mem_gain):
     def closure(inputs):
         """Updates memory based on current TB1 and TN activity.
@@ -111,7 +153,8 @@ class CentralComplex:
             "TB1": FunctionLayer(["CL1", "TB1"], tb1_output, initial = self.tb1),
             "TN1": FunctionLayer("flow", tn1_output),
             "TN2": FunctionLayer("flow", tn2_output),
-            "CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_output(cpu4_mem_gain=0.01), initial = self.cpu4),
+            #"CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_output(cpu4_mem_gain=0.01), initial = self.cpu4),
+            "CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_bistable_output(cpu4_mem_gain=0.05, N=400, dI=1/400, mI=1.0), initial = self.cpu4),
             "CPU1": FunctionLayer(["TB1", "CPU4"], cpu1_output),
             "motor": FunctionLayer("CPU1", motor_output)
         })

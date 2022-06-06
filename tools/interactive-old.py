@@ -8,7 +8,7 @@ import numpy as np
 from loguru import logger
 from pygame.locals import *
 from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
-from pim.models.new import stone
+from pim.models.new import stone as stone
 import scipy
 
 def world_to_screen(pos):
