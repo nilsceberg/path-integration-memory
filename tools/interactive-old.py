@@ -85,6 +85,10 @@ motor = 0
 last_estimates = []
 estimate_scaling = 600.0
 
+cx_update_interval = 1/30
+cx_update_timer = 0
+cx_update_velocity = np.array([0.0, 0.0])
+
 decoded_polar = np.array([0, 0])
 while running:
     dt = clock.get_time() / 1000
@@ -136,9 +140,14 @@ while running:
         # Is this where we went wrong? trials.py line 138, 139
 
     h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
-    v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
-
-    motor = cx.update(0.0, h, v)
+    cx_update_velocity += np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
+    if cx_update_timer > cx_update_interval:
+        v = cx_update_velocity
+        motor = cx.update(0.0, h, v)
+        cx_update_timer -= cx_update_interval
+        cx_update_velocity = np.array([0.0, 0.0])
+    else:
+        cx_update_timer += dt
 
     estimated_polar = cx.estimate_position()
 
