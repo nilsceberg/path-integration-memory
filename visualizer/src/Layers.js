@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bar, Line, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, ComposedChart, ResponsiveContainer } from "recharts";
+import { Bar, Line, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, ComposedChart, ResponsiveContainer, Scatter } from "recharts";
 
 export default function Layers(props) {
     const { state } = props;
     if (!state) return null;
 
-    const { tb1, cpu4 } = state;
+    const { tb1, cpu4 } = state.layers;
 
     return (
         <>
@@ -16,17 +16,17 @@ export default function Layers(props) {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line dataKey="TB1" fill="#8884d8" />
+                    <Scatter dataKey="TB1" fill="#8884d8" />
                 </ComposedChart>
             </ResponsiveContainer>
             <ResponsiveContainer width="100%" height={250}>
                 <ComposedChart data={cpu4.map((a, i)  => ({ i: i+1, CPU4: a }))}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="i" />
-                    <YAxis />
+                    <YAxis domain={[0.3, 0.7]}/>
                     <Tooltip />
                     <Legend />
-                    <Line dataKey="CPU4" fill="#8884d8" />
+                    <Scatter dataKey="CPU4" fill="#8884d8" />
                 </ComposedChart>
             </ResponsiveContainer>
         </>

@@ -1,4 +1,4 @@
-from ..network2 import InputLayer, Layer, RecurrentNetwork, FunctionLayer, IdentityLayer
+from ..network2 import InputLayer, Layer, RecurrentNetwork, WeightedConnection, FunctionLayer, IdentityLayer
 import numpy as np
 import scipy.optimize
 
@@ -114,41 +114,46 @@ class CentralComplex:
         self.cpu4_mem_gain = cpu4_mem_gain
         self.smoothed_flow = 0
 
-        self.tb1 = np.zeros(N_TB1)
-        self.cpu4 = 0.5 * np.ones(N_CPU4)
-
         self.network = RecurrentNetwork()
 
-        self.network.add_layer(InputLayer("TL2"))
+        self.heading_input = self.network.add_layer(InputLayer("TL2"))
+
         self.network.add_layer(IdentityLayer("CL1"))
+        self.network.add_connection(WeightedConnection("TL2", "CL1"))
 
-        self.network.add_layer(InputLayer("flow"))
+        self.flow_input = self.network.add_layer(InputLayer("flow"))
+
         self.network.add_layer(FunctionLayer("TN1", tn1_output))
+        self.network.add_connection(WeightedConnection("flow", "TN1"))
+
         self.network.add_layer(FunctionLayer("TN2", tn2_output))
+        self.network.add_connection(WeightedConnection("flow", "TN2"))
 
-        self.network.add_layer(FunctionLayer("CPU4", cpu4_output(cpu4_mem_gain=0.01)))
+        self.tb1 = self.network.add_layer(FunctionLayer("TB1", tb1_output, np.zeros(N_TB1)))
+        self.network.add_connection(WeightedConnection("CL1", "TB1", "CL1"))
+        self.network.add_connection(WeightedConnection("TB1", "TB1", "TB1"))
 
-        #{
-        #    "flow": InputLayer(),
-        #    "TL2": InputLayer(),
-        #    "CL1": IdentityLayer("TL2"),
-        #    "TB1": FunctionLayer(["CL1", "TB1"], tb1_output, initial = self.tb1),
-        #    "TN1": FunctionLayer("flow", tn1_output),
-        #    "TN2": FunctionLayer("flow", tn2_output),
-        #    "CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_output(cpu4_mem_gain=0.01), initial = self.cpu4),
-        #    "CPU1": FunctionLayer(["TB1", "CPU4"], cpu1_output),
-        #    "motor": FunctionLayer("CPU1", motor_output)
-        #})
+        self.cpu4 = self.network.add_layer(FunctionLayer("CPU4", cpu4_output(cpu4_mem_gain=0.01), 0.5 * np.ones(N_CPU4)))
+        self.network.add_connection(WeightedConnection("CL1", "CPU4", "CL1"))
+        self.network.add_connection(WeightedConnection("TN1", "CPU4", "TN1"))
+        self.network.add_connection(WeightedConnection("TN2", "CPU4", "TN2"))
+
+        self.network.add_layer(FunctionLayer("CPU1", cpu1_output))
+        self.network.add_connection(WeightedConnection("TB1", "CPU1", "TB1"))
+        self.network.add_connection(WeightedConnection("CPU4", "CPU1", "CPU4"))
+
+        self.network.add_layer(FunctionLayer("motor", motor_output))
+        self.network.add_connection(WeightedConnection("CPU1", "motor"))
 
     def update(self, dt, heading, velocity):
         flow = self.get_flow(heading, velocity)
-        self.network["flow"].set_input(flow) # type: ignore
-        self.network["TL2"].set_input(np.array([heading])) # type: ignore
-        self.tb1, self.cpu4, motor = self.network.step(dt, ["TB1", "CPU4", "motor"])
-        return motor
+        self.heading_input.set(heading)
+        self.flow_input.set(flow)
+        self.network.step(dt)
+        return 
 
     def estimate_position(self):
-        return fit_cpu4(self.cpu4)
+        return fit_cpu4(self.cpu4.output)
 
     def to_cartesian(self, polar):
         return np.array([
@@ -157,7 +162,7 @@ class CentralComplex:
         ]) * polar[0]
 
     def estimate_heading(self):
-        return fit_tb1(self.tb1)
+        return fit_tb1(self.tb1.output)
 
     def get_flow(self, heading, velocity, filter_steps=0):
         """Calculate optic flow depending on preference angles. [L, R]"""

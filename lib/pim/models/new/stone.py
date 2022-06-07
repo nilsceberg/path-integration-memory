@@ -38,7 +38,7 @@ def bistable_neuron(Idown, Iup):
         if x >= Iup:
             state = 1
         elif x <= Idown:
-            state = 0            
+            state = 0
         return state
     return f
 
@@ -67,7 +67,6 @@ def cpu4_bistable_output(cpu4_mem_gain, N, dI, mI):
 
         activity = np.array([[neuron(x) for neuron in column] for (column, x) in zip(columns, inputs)])
         output = np.sum(activity, 1) / N * mI
-        print(output)
 
         return output
 
@@ -153,8 +152,8 @@ class CentralComplex:
             "TB1": FunctionLayer(["CL1", "TB1"], tb1_output, initial = self.tb1),
             "TN1": FunctionLayer("flow", tn1_output),
             "TN2": FunctionLayer("flow", tn2_output),
-            #"CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_output(cpu4_mem_gain=0.01), initial = self.cpu4),
-            "CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_bistable_output(cpu4_mem_gain=0.05, N=400, dI=1/400, mI=1.0), initial = self.cpu4),
+            "CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_output(cpu4_mem_gain=0.01), initial = self.cpu4),
+            #"CPU4": FunctionLayer(["CPU4", "TB1", "TN1", "TN2"], cpu4_bistable_output(cpu4_mem_gain=0.05, N=400, dI=1/400, mI=1.0), initial = self.cpu4),
             "CPU1": FunctionLayer(["TB1", "CPU4"], cpu1_output),
             "motor": FunctionLayer("CPU1", motor_output)
         })

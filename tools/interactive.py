@@ -9,7 +9,9 @@ import scipy.optimize
 from websockets.exceptions import ConnectionClosedOK
 from loguru import logger
 
-from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
+#from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
+from pim.models.stone import bee_simulator
+from pim.models.new import stone
 
 # Settings
 TIME_STEP = 0.016
@@ -63,62 +65,22 @@ async def accept_connections():
     async with websockets.server.serve(handle_connection, "", 8001):
         await asyncio.Future() # run forever
 
-def cpu4_model(args, x):
-    return args[0] * np.cos(np.pi + 2*x + args[1])
-
-def tb1_model(args, x):
-    return 0.5 + np.cos(np.pi + x + args[0]) * 0.5
-
-def fit_cpu4(data):
-    xs = np.linspace(0, 2*np.pi, central_complex.N_CPU4, endpoint = False)
-    error = lambda args: cpu4_model(args, xs) - data
-    params, _ = scipy.optimize.leastsq(error, np.array([0.1, 0.01]))
-    return params
-
-def fit_tb1(data):
-    xs = np.linspace(0, 2*np.pi, central_complex.N_TB1, endpoint = False)
-    error = lambda args: tb1_model(args, xs) - data
-    params, _ = scipy.optimize.leastsq(error, np.array([0.1]))
-    return params
-
-def decode_cpu4(cpu4_output):
-    cpu4_normalized = (cpu4_output - 0.5)*2.0
-    params = fit_cpu4(cpu4_normalized)
-    return params
-
-def decode_tb1(tb1_output):
-    heading = fit_tb1(tb1_output)[0]
-    return heading
 
 def serialize_state(
     position,
     heading,
-    decoded_position,
-    decoded_heading,
-    tl2,
-    cl1,
-    tb1,
-    tn1,
-    tn2,
-    memory,
-    cpu4,
-    cpu1,
-    motor,
+    estimated_polar,
+    estimated_position,
+    estimated_heading,
+    outputs,
 ):
     return {
         "position": position.tolist(),
         "heading": heading,
-        "decoded_position": decoded_position.tolist(),
-        "decoded_heading": decoded_heading,
-        "tl2": tl2.tolist(),
-        "cl1": cl1.tolist(),
-        "tb1": tb1.tolist(),
-        "tn1": tn1.tolist(),
-        "tn2": tn2.tolist(),
-        "memory": memory.tolist(),
-        "cpu4": cpu4.tolist(),
-        "cpu1": cpu1.tolist(),
-        "motor": motor,
+        "estimated_polar": estimated_polar.tolist(),
+        "estimated_position": estimated_position.tolist(),
+        "estimated_heading": estimated_heading.tolist(),
+        "layers": dict([(name, output.tolist()) for (name, output) in outputs.items()])
     }
 
 async def run_simulation():
@@ -130,15 +92,13 @@ async def run_simulation():
     angular_velocity = 0.0
 
     # CX state
-    cx = cx_rate.CXRate(0.1)
-    tb1 = np.zeros(central_complex.N_TB1)
-    memory = 0.5 * np.ones(central_complex.N_CPU4)
+    cx = stone.CentralComplex()
     motor = 0
+    last_estimates = []
+    estimate_scaling = 600.0
     
     auto = False
     homing = True
-
-    last_decoded = []
 
     last_frame = datetime.datetime.now()
     while True:
@@ -163,34 +123,38 @@ async def run_simulation():
             # apply velocity
             position += velocity
 
-        # update CX
+        heading = bee_simulator.rotate(heading, angular_velocity)
+
+        # Velocity is represented as sin, cos in bee_simulator.py / thrust. Mistake? We flip it when inputting to update_cells
+        direction = np.array([np.cos(heading), np.sin(heading)])
+        velocity = direction * speed * MAX_SPEED * dt
+
+        if speed > 0.00001:
+            position += velocity
+            # Is this where we went wrong? trials.py line 138, 139
+
         h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
         v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
-        tl2, cl1, tb1, tn1, tn2, memory, cpu4, cpu1, motor = trials.update_cells(h, v, tb1, memory, cx)
 
-        decoded_polar = decode_cpu4(cpu4) #decode_position(cpu4_mem.reshape(2, -1), cpu4_mem_gain)
-        last_decoded = (last_decoded + [np.array([
-            np.cos(decoded_polar[1] + np.pi),
-            -np.sin(decoded_polar[1] + np.pi),
-        ]) * decoded_polar[0] * 300.0])[-16:]
+        motor = cx.update(0.0, h, v)
 
-        decoded_position = np.mean(np.array(last_decoded), 0)
-        decoded_heading = decode_tb1(tb1)
+        estimated_polar = cx.estimate_position()
+
+        last_estimates = (last_estimates + [cx.to_cartesian(estimated_polar) * estimate_scaling])[-16:]
+        estimated_position = np.mean(np.array(last_estimates), 0)
+        estimated_heading = cx.estimate_heading()
 
         publish(serialize_state(
             position,
             heading,
-            decoded_position,
-            decoded_heading,
-            tl2,
-            cl1,
-            tb1,
-            tn1,
-            tn2,
-            memory,
-            cpu4,
-            cpu1,
-            motor,
+            estimated_polar,
+            estimated_position,
+            estimated_heading,
+            {
+                "motor": np.array([motor]),
+                "cpu4": cx.cpu4,
+                "tb1": cx.tb1,
+            }
         ))
 
 

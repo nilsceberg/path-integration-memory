@@ -41,19 +41,19 @@ class Connection:
         raise NotImplementedError
 
 class Layer:
-    def __init__(self, name, initial_input = 0.0):
+    def __init__(self, name, initial_output = 0.0, initial_input = 0.0):
         self.name = name
         self.next_inputs = None # type: Any
-        self.inputs = None
-        self.output = None
+        self.inputs = None # type: Any
         self.initial_input = initial_input
+        self.output = initial_output
 
     def begin(self):
         self.inputs = self.next_inputs
         self.next_inputs = None
 
     def step(self):
-        self.output = self.update(self.inputs if self.inputs is not None else self.initial_input)
+        self.output = self.update(self.inputs)
         return self.output
 
     def input(self, value, endpoint=None):
@@ -89,8 +89,8 @@ class InputLayer(Layer):
         return self.value
 
 class FunctionLayer(Layer):
-    def __init__(self, name, f):
-        super().__init__(name)
+    def __init__(self, name, f, initial_output = 0.0):
+        super().__init__(name, initial_output)
         self.f = f
 
     def update(self, input):
@@ -128,11 +128,15 @@ class RecurrentNetwork(Network):
         super().__init__()
     
     def step(self, dt = 1):
+        # For this network, we go through all network layers and first
+        # propagate the current output to the input for the next layer.
+        for pre_layer in self.layers.values():
+            for connection in [connection for connection in self.connections if connection.is_pre(pre_layer)]:
+                for post_layer in connection.get_post(self):
+                    post_layer.input(connection.function(pre_layer.output), connection.get_endpoint())
+
         for layer in self.layers.values():
             layer.begin()
 
         for layer in self.layers.values():
-            output = layer.step()
-            for connection in [connection for connection in self.connections if connection.is_pre(layer)]:
-                for post_layer in connection.get_post(self):
-                    post_layer.input(connection.function(output), connection.get_endpoint())
+            layer.step()
