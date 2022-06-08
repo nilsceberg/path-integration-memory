@@ -156,28 +156,34 @@ class CentralComplex:
             "TB1": FunctionLayer(
                 inputs = ["CL1", "TB1"],
                 function = tb1_output,
-#                initial = self.tb1),
+#                initial = self.tb1,
             ),
             "TN1": FunctionLayer(
                 inputs = ["flow"],
-                function = tn1_output),
+                function = tn1_output,
+            ),
             "TN2": FunctionLayer(
                 inputs = ["flow"],
-                function = tn2_output),
-#            "CPU4": FunctionLayer(
-#                inputs = ["CPU4", "TB1", "TN1", "TN2"],
-#                function = cpu4_output(cpu4_mem_gain=0.01),
-#                initial = self.cpu4),
+                function = tn2_output,
+            ),
+            "CPU4": FunctionLayer(
+                inputs = ["CPU4", "TB1", "TN1", "TN2"],
+                function = cpu4_output(cpu4_mem_gain=0.01),
+#                initial = self.cpu4,
+            ),
 #           "CPU4": FunctionLayer(
 #               inputs = ["CPU4", "TB1", "TN1", "TN2"],
 #               function = cpu4_bistable_output(cpu4_mem_gain=0.05, N=400, dI=1/300, mI=1.0),
-#               initial = self.cpu4),
+#               initial = self.cpu4,
+#            ),
             "CPU1": FunctionLayer(
                 inputs = ["TB1", "CPU4"],
-                function = cpu1_output),
+                function = cpu1_output,
+            ),
             "motor": FunctionLayer(
                 inputs = ["CPU1"],
-                function = motor_output)
+                function = motor_output,
+            )
         })
 
     def update(self, dt, heading, velocity):
