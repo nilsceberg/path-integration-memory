@@ -1,4 +1,4 @@
-from ..network import IdentityLayer, InputLayer, ForwardNetwork, FunctionLayer
+from ..network import IdentityLayer, InputLayer, ForwardNetwork, FunctionLayer, RecurrentNetwork
 import numpy as np
 import scipy.optimize
 
@@ -23,12 +23,14 @@ def tb1_output(inputs):
     theta, tb1 = inputs
     return (1.0 + np.cos(np.pi + x + theta)) / 2.0
 
-def tn1_output(flow):
+def tn1_output(inputs):
     """Linearly inverse sensitive to forwards and backwards motion."""
+    flow, = inputs
     return np.clip((1.0 - flow) / 2.0, 0, 1)
 
-def tn2_output(flow):
+def tn2_output(inputs):
     """Linearly sensitive to forwards motion only."""
+    flow, = inputs
     return np.clip(flow, 0, 1)
 
 def bistable_neuron(Idown, Iup):
@@ -149,7 +151,7 @@ class CentralComplex:
         self.flow_input = InputLayer()
         self.heading_input = InputLayer()
 
-        self.network = ForwardNetwork({
+        self.network = RecurrentNetwork({
             "flow": self.flow_input,
             "TL2": self.heading_input,
             "CL1": IdentityLayer("TL2"),

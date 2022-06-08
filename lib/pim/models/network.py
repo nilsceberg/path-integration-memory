@@ -20,13 +20,19 @@ class Network:
             layer.reset()
 
     def step(self, dt: float):
-        self.begin_layers()
+        self.preprocess_layers()
         self.step_layers(dt)
+        self.postprocess_layers()
 
-    def begin_layers(self):
+    def preprocess_layers(self):
         """Prepare all layers for this time step."""
         for layer in self.layers.values():
             layer.begin()
+
+    def postprocess_layers(self):
+        """Post-process all layers after this time step."""
+        for layer in self.layers.values():
+            layer.end()
 
     def step_layers(self, dt: float):
         """Step through each layer; override this if order is important."""
@@ -60,6 +66,23 @@ class ForwardNetwork(Network):
         return self.layers[layer].output(self)
 
 
+class RecurrentNetwork(Network):
+    """Fully recurrent network that only propagates information along one edge per step."""
+
+    def __init__(self, layers: Dict[str, "Layer"]):
+        super().__init__(layers)
+        self._previous_outputs = dict([(name, np.array([0.0])) for name in layers.keys()])
+
+    def postprocess_layers(self):
+        super().postprocess_layers()
+
+        # Save current outputs as previous outputs in preparation for next step.
+        self._previous_outputs = dict([(name, layer.output(self)) for name, layer in self.layers.items()])
+
+    def output(self, layer) -> Output:
+        return self._previous_outputs[layer]
+
+
 class Trap():
     @staticmethod
     def check(value):
@@ -77,6 +100,9 @@ class Layer:
         pass
 
     def begin(self):
+        pass
+
+    def end(self):
         pass
 
     def step(self, network: Network, dt: float):
