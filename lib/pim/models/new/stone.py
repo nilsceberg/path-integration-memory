@@ -66,7 +66,7 @@ def cpu4_bistable_output(cpu4_mem_gain, N, dI, mI):
         inputs = cpu4_mem + mem_update * cpu4_mem_gain
 
         activity = np.array([[neuron(x) for neuron in column] for (column, x) in zip(columns, inputs)])
-        output = np.sum(activity, 1) / N * mI
+        output = np.sum(activity, 1) / N * mI * 1.02 + np.random.normal(0.0, 0.03)
 
         return output
 
