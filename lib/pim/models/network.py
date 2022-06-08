@@ -2,8 +2,9 @@ from abc import abstractmethod
 from typing import Callable, Dict, List, NewType, Union
 import numpy as np
 
-Input = NewType("Input", str)
-Output = NewType("Output", np.ndarray)
+Input = str
+Output = np.ndarray
+#Output = NewType("Output", np.ndarray)
 
 
 class Network:
@@ -90,7 +91,7 @@ class FunctionLayer(Layer):
 
 
 def IdentityLayer(input):
-    return FunctionLayer(input, lambda x: x[0])
+    return FunctionLayer([input], lambda x: x[0])
 
 
 class InputLayer(Layer):

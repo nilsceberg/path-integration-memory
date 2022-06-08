@@ -105,7 +105,8 @@ def cpu1_output(inputs):
                                     np.roll(cpu4_reshaped[0], -1)])
     return cpu1.reshape(-1)
 
-def motor_output(cpu1):
+def motor_output(inputs):
+    cpu1, = inputs
     random_std=0.05
     """Sum CPU1 to determine left or right turn."""
     cpu1_reshaped = cpu1.reshape(2, -1)
@@ -145,42 +146,50 @@ class CentralComplex:
         self.tb1 = np.zeros(N_TB1)
         self.cpu4 = 0.5 * np.ones(N_CPU4)
 
+        self.flow_input = InputLayer()
+        self.heading_input = InputLayer()
+
         self.network = ForwardNetwork({
-            "flow": InputLayer(),
-            "TL2": InputLayer(),
+            "flow": self.flow_input,
+            "TL2": self.heading_input,
             "CL1": IdentityLayer("TL2"),
             "TB1": FunctionLayer(
                 inputs = ["CL1", "TB1"],
                 function = tb1_output,
-                initial = self.tb1),
+#                initial = self.tb1),
+            ),
             "TN1": FunctionLayer(
-                inputs = "flow",
+                inputs = ["flow"],
                 function = tn1_output),
             "TN2": FunctionLayer(
-                inputs = "flow",
+                inputs = ["flow"],
                 function = tn2_output),
 #            "CPU4": FunctionLayer(
 #                inputs = ["CPU4", "TB1", "TN1", "TN2"],
 #                function = cpu4_output(cpu4_mem_gain=0.01),
 #                initial = self.cpu4),
-            "CPU4": FunctionLayer(
-                inputs = ["CPU4", "TB1", "TN1", "TN2"],
-                function = cpu4_bistable_output(cpu4_mem_gain=0.05, N=400, dI=1/300, mI=1.0),
-                initial = self.cpu4),
+#           "CPU4": FunctionLayer(
+#               inputs = ["CPU4", "TB1", "TN1", "TN2"],
+#               function = cpu4_bistable_output(cpu4_mem_gain=0.05, N=400, dI=1/300, mI=1.0),
+#               initial = self.cpu4),
             "CPU1": FunctionLayer(
                 inputs = ["TB1", "CPU4"],
                 function = cpu1_output),
             "motor": FunctionLayer(
-                inputs = "CPU1",
+                inputs = ["CPU1"],
                 function = motor_output)
         })
 
     def update(self, dt, heading, velocity):
         flow = self.get_flow(heading, velocity)
-        self.network["flow"].set_input(flow) # type: ignore
-        self.network["TL2"].set_input(np.array([heading])) # type: ignore
-        self.tb1, self.cpu4, motor = self.network.step(dt, ["TB1", "CPU4", "motor"])
-        return motor
+        self.flow_input.set(flow)
+        self.heading_input.set(np.array([heading]))
+
+        self.network.step(dt)
+
+        self.tb1 = self.network.output("TB1")
+        self.cpu4 = self.network.output("CPU4")
+        return self.network.output("motor")
 
     def estimate_position(self):
         return fit_cpu4(self.cpu4)
