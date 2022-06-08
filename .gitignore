@@ -2,6 +2,8 @@ __pycache__
 results
 trash
 venv
+*.swp
+*.swo
 
 # Jupyter
 .ipynb_checkpoints
