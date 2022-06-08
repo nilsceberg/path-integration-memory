@@ -1,30 +1,53 @@
 from abc import abstractmethod
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, NewType, Union
 import numpy as np
+
+Input = NewType("Input", str)
+Output = NewType("Output", np.ndarray)
 
 
 class Network:
     def __init__(self, layers: Dict[str, "Layer"]):
+        """Constructs the network from a dictionary on the form name -> layer. Note that
+        some network types (such as the forward network) relies on the order of this dictionary,
+        which is a reliable property of dictionaries since Python 3.7."""
         self.layers = layers
 
     def reset(self):
         for name, layer in self.layers.items():
             layer.reset()
 
-    @abstractmethod
-    def step(self, dt: float, query: List[str]) -> List[np.ndarray]:
-        pass
+    def step(self, dt: float):
+        self.begin_layers()
+        self.step_layers(dt)
 
-    def __getitem__(self, name: str) -> "Layer":
-        return self.layers[name]
+    def begin_layers(self):
+        """Prepare all layers for this time step."""
+        for layer in self.layers.values():
+            layer.begin()
+
+    def step_layers(self, dt: float):
+        """Step through each layer; override this if order is important."""
+        for layer in self.layers.values():
+            layer.step(self, dt)
+
+    def simulate(self, input_layer: "InputLayer", output_layer_name: str, input_vector: List[Output], dt: float = 1.0):
+        def step(network, input_layer, x):
+            input_layer.set(x)
+            network.step(dt)
+            return network.output(output_layer_name)
+
+        return np.array([step(self, input_layer, x) for x in input_vector])
+
+    @abstractmethod
+    def output(self, layer: str) -> Output:
+        pass
 
 
 class ForwardNetwork(Network):
-    def step(self, dt: float, query: List[str]) -> List[np.ndarray]:
-        for name, layer in self.layers.items():
-            layer.begin()
-
-        return [self.layers[layer].output(self, dt) for layer in query]
+    """Network that assumes that it is acyclic and can therefore be naively recursively evaluated."""
+    def output(self, layer) -> np.ndarray:
+        return self.layers[layer].output(self)
 
 
 class Trap():
@@ -40,62 +63,34 @@ class Layer:
     def __init__(self):
         self.reset()
 
-    @abstractmethod
     def reset(self):
         pass
 
-    @abstractmethod
     def begin(self):
         pass
 
+    def step(self, network: Network, dt: float):
+        """Guaranteed to only be called once per step. Allowed to have side-effects."""
+        pass
+
     @abstractmethod
-    def output(self, network: Network, dt: float) -> np.ndarray:
+    def output(self, network: Network) -> Output:
+        """Should probably be suitable for memoization."""
         pass
 
 
-class MemoizedLayer(Layer):
-    def __init__(self, initial: Union[Trap, np.ndarray] = Trap()):
-        self.initial = initial
-        super().__init__()
-
-    def reset(self):
-        self.previous_activity = None
-        self.activity = self.initial
-
-    def begin(self):
-        self.previous_activity = self.activity
-        self.activity = None
-
-    @abstractmethod
-    def evaluate(self, network: Network, dt: float) -> np.ndarray:
-        pass
-
-    def output(self, network: Network, dt: float) -> np.ndarray:
-        if self.activity is not None:
-            return Trap.check(self.activity)
-        else:
-            # Ensure that any recurrences see the last value of this layer.
-            self.activity = self.previous_activity
-            self.activity = self.evaluate(network, dt)
-            return self.activity
-
-
-class FunctionLayer(MemoizedLayer):
-    def __init__(self, inputs: Union[str, List[str]], function, initial: Union[Trap, np.ndarray] = Trap()):
-        super().__init__(initial)
-        self.function = function
+class FunctionLayer(Layer):
+    def __init__(self, inputs: List[Input], function: Callable[[List[Output]], Output]):
         self.inputs = inputs
+        self.function = function
 
-    def evaluate(self, network: Network, dt: float) -> np.ndarray:
-        if isinstance(self.inputs, str):
-            inputs = network[self.inputs].output(network, dt)
-        else:
-            inputs = [network[layer].output(network, dt) for layer in self.inputs]
+    def output(self, network: Network) -> Output:
+        inputs = [network.output(layer) for layer in self.inputs]
         return self.function(inputs)
 
 
 def IdentityLayer(input):
-    return FunctionLayer(input, lambda x: x)
+    return FunctionLayer(input, lambda x: x[0])
 
 
 class InputLayer(Layer):
@@ -103,8 +98,9 @@ class InputLayer(Layer):
         super().__init__()
         self.input = Trap()
 
-    def set_input(self, input: np.ndarray):
+    def set(self, input: Output):
+        """The input parameter is an Output! Think about that for a second."""
         self.input = input
 
-    def output(self, network: Network, dt: float) -> np.ndarray:
+    def output(self, network: Network) -> np.ndarray:
         return Trap.check(self.input)
