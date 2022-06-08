@@ -1,6 +1,7 @@
 from abc import abstractmethod
 from typing import Callable, Dict, List, NewType, Union
 import numpy as np
+import networkx as nx
 
 Input = str
 Output = np.ndarray
@@ -44,6 +45,14 @@ class Network:
     def output(self, layer: str) -> Output:
         pass
 
+    def get_graph(self) -> nx.Graph:
+        G = nx.DiGraph()
+
+        for name, layer in self.layers.items():
+            layer.add_to_graph(name, G)
+
+        return G
+
 
 class ForwardNetwork(Network):
     """Network that assumes that it is acyclic and can therefore be naively recursively evaluated."""
@@ -79,6 +88,13 @@ class Layer:
         """Should probably be suitable for memoization."""
         pass
 
+    def add_to_graph(self, name: str, graph: nx.Graph):
+        graph.add_node(name)
+        self.add_edges_to_graph(name, graph)
+
+    def add_edges_to_graph(self, name: str, graph: nx.Graph):
+        pass
+
 
 class FunctionLayer(Layer):
     def __init__(self, inputs: List[Input], function: Callable[[List[Output]], Output]):
@@ -88,6 +104,10 @@ class FunctionLayer(Layer):
     def output(self, network: Network) -> Output:
         inputs = [network.output(layer) for layer in self.inputs]
         return self.function(inputs)
+
+    def add_edges_to_graph(self, name: str, graph: nx.Graph):
+        for input in self.inputs:
+            graph.add_edge(input, name)
 
 
 def IdentityLayer(input):
