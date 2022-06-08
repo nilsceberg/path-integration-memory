@@ -1,4 +1,4 @@
-from ..network import IdentityLayer, InputLayer, Network, FunctionLayer
+from ..network import IdentityLayer, InputLayer, ForwardNetwork, FunctionLayer
 import numpy as np
 import scipy.optimize
 
@@ -145,7 +145,7 @@ class CentralComplex:
         self.tb1 = np.zeros(N_TB1)
         self.cpu4 = 0.5 * np.ones(N_CPU4)
 
-        self.network = Network({
+        self.network = ForwardNetwork({
             "flow": InputLayer(),
             "TL2": InputLayer(),
             "CL1": IdentityLayer("TL2"),

@@ -2,6 +2,7 @@ from abc import abstractmethod
 from typing import Callable, Dict, List, Union
 import numpy as np
 
+
 class Network:
     def __init__(self, layers: Dict[str, "Layer"]):
         self.layers = layers
@@ -10,14 +11,20 @@ class Network:
         for name, layer in self.layers.items():
             layer.reset()
 
+    @abstractmethod
+    def step(self, dt: float, query: List[str]) -> List[np.ndarray]:
+        pass
+
+    def __getitem__(self, name: str) -> "Layer":
+        return self.layers[name]
+
+
+class ForwardNetwork(Network):
     def step(self, dt: float, query: List[str]) -> List[np.ndarray]:
         for name, layer in self.layers.items():
             layer.begin()
 
         return [self.layers[layer].output(self, dt) for layer in query]
-
-    def __getitem__(self, name: str) -> "Layer":
-        return self.layers[name]
 
 
 class Trap():
@@ -46,7 +53,7 @@ class Layer:
         pass
 
 
-class TimeSteppedLayer(Layer):
+class MemoizedLayer(Layer):
     def __init__(self, initial: Union[Trap, np.ndarray] = Trap()):
         self.initial = initial
         super().__init__()
@@ -55,13 +62,13 @@ class TimeSteppedLayer(Layer):
         self.previous_activity = None
         self.activity = self.initial
 
-    @abstractmethod
-    def evaluate(self, network: Network, dt: float) -> np.ndarray:
-        pass
-
     def begin(self):
         self.previous_activity = self.activity
         self.activity = None
+
+    @abstractmethod
+    def evaluate(self, network: Network, dt: float) -> np.ndarray:
+        pass
 
     def output(self, network: Network, dt: float) -> np.ndarray:
         if self.activity is not None:
@@ -71,9 +78,9 @@ class TimeSteppedLayer(Layer):
             self.activity = self.previous_activity
             self.activity = self.evaluate(network, dt)
             return self.activity
-        
 
-class FunctionLayer(TimeSteppedLayer):
+
+class FunctionLayer(MemoizedLayer):
     def __init__(self, inputs: Union[str, List[str]], function, initial: Union[Trap, np.ndarray] = Trap()):
         super().__init__(initial)
         self.function = function
