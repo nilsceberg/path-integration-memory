@@ -10,6 +10,7 @@ N_TB1 = 8
 N_TN1 = 2
 N_TN2 = 2
 N_CPU4 = 16
+N_Pontin = 16
 N_CPU1A = 14
 N_CPU1B = 2
 N_CPU1 = N_CPU1A + N_CPU1B

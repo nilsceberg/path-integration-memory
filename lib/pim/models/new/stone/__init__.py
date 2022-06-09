@@ -38,11 +38,12 @@ class CentralComplex:
         self.flow_input = InputLayer(initial = np.zeros(2))
         self.heading_input = InputLayer()
 
-        self.network = self.build_network()
-
     @abstractmethod
     def build_network(self) -> Network:
         pass
+
+    def setup(self):
+        self.network = self.build_network()
 
     def update(self, dt, heading, velocity):
         flow = self.get_flow(heading, velocity)

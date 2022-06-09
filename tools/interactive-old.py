@@ -9,7 +9,7 @@ from loguru import logger
 from pygame.locals import *
 from pim.models.stone import bee_simulator
 from pim.models.new import stone
-from pim.models.new.stone.rate import CXRate
+from pim.models.new.stone.rate import CXRate, CXRatePontin
 import scipy
 
 def world_to_screen(pos):
@@ -47,6 +47,10 @@ def get_image(sheet, frame, width=23, height=23, scale=1.0):
     image = pygame.transform.scale(image, (width * scale, height * scale))
     return image
 
+def cart2pol(x, y):
+    rho = np.sqrt(x**2 + y**2)
+    phi = np.arctan2(y, x)
+    return(rho, phi)
 
 pygame.init()
 
@@ -82,7 +86,9 @@ clock = pygame.time.Clock()
 
 # Central complex:
 #cx = stone.CXBasic()
-cx = CXRate(noise = 0.0)
+# cx = CXRate()
+cx = CXRatePontin()
+cx.setup()
 motor = 0
 last_estimates = []
 estimate_scaling = 600.0
@@ -150,6 +156,8 @@ while running:
         cx_update_velocity = np.array([0.0, 0.0])
     else:
         cx_update_timer += dt
+
+    
 
     estimated_polar = cx.estimate_position()
 
