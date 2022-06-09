@@ -80,7 +80,7 @@ font = pygame.font.SysFont("Monospace", 16)
 clock = pygame.time.Clock()
 
 # Central complex:
-cx = stone.CentralComplex()
+cx = stone.CXBasic()
 motor = 0
 last_estimates = []
 estimate_scaling = 600.0
