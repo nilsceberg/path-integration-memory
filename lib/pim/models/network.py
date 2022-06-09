@@ -71,7 +71,7 @@ class RecurrentNetwork(Network):
 
     def __init__(self, layers: Dict[str, "Layer"]):
         super().__init__(layers)
-        self._previous_outputs = dict([(name, np.array([0.0])) for name in layers.keys()])
+        self._previous_outputs = dict([(name, layer.initial) for name, layer in layers.items()])
 
     def postprocess_layers(self):
         super().postprocess_layers()
@@ -93,7 +93,8 @@ class Trap():
 
 
 class Layer:
-    def __init__(self):
+    def __init__(self, initial = np.array([0.0])):
+        self.initial = initial
         self.reset()
 
     def reset(self):
@@ -123,9 +124,10 @@ class Layer:
 
 
 class FunctionLayer(Layer):
-    def __init__(self, inputs: List[Input], function: Callable[[List[Output]], Output]):
+    def __init__(self, inputs: List[Input], function: Callable[[List[Output]], Output], initial = np.array([0.0])):
         self.inputs = inputs
         self.function = function
+        super().__init__(initial)
 
     def output(self, network: Network) -> Output:
         inputs = [network.output(layer) for layer in self.inputs]
@@ -141,8 +143,8 @@ def IdentityLayer(input):
 
 
 class InputLayer(Layer):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, initial = np.array([0.0])):
+        super().__init__(initial)
         self.input = Trap()
 
     def set(self, input: Output):

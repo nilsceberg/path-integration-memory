@@ -125,7 +125,7 @@ while running:
             #velocity += np.array([0, 1])
 
     if homing:
-        angular_velocity = motor
+        angular_velocity = motor * 2.0 * MAX_ANGULAR_SPEED * dt
     else:
         angular_velocity = angular_velocity * MAX_ANGULAR_SPEED * dt
 
