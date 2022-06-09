@@ -7,8 +7,9 @@ import math
 import numpy as np
 from loguru import logger
 from pygame.locals import *
-from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
-from pim.models.new import stone as stone
+from pim.models.stone import bee_simulator
+from pim.models.new import stone
+from pim.models.new.stone.rate import CXRate
 import scipy
 
 def world_to_screen(pos):
@@ -80,7 +81,8 @@ font = pygame.font.SysFont("Monospace", 16)
 clock = pygame.time.Clock()
 
 # Central complex:
-cx = stone.CXBasic()
+#cx = stone.CXBasic()
+cx = CXRate(noise = 0.0)
 motor = 0
 last_estimates = []
 estimate_scaling = 600.0

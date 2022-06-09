@@ -1,10 +1,9 @@
 from abc import abstractmethod
-from ...network import IdentityLayer, InputLayer, ForwardNetwork, FunctionLayer, Network, RecurrentNetwork
+from ...network import InputLayer, Network
 import numpy as np
 import scipy.optimize
 
 from .constants import *
-from . import basic
 
 
 def cpu4_model(args, x):
@@ -82,46 +81,3 @@ class CentralComplex:
                                   1.0 / filter_steps) * self.smoothed_flow)
             flow = self.smoothed_flow
         return flow
-
-
-class CXBasic(CentralComplex):
-    def build_network(self) -> Network:
-        return RecurrentNetwork({
-            "flow": self.flow_input,
-            "TL2": self.heading_input,
-            "CL1": IdentityLayer("TL2"),
-            "TB1": FunctionLayer(
-                inputs = ["CL1", "TB1"],
-                function = basic.tb1_output,
-                initial = self.tb1,
-            ),
-            "TN1": FunctionLayer(
-                inputs = ["flow"],
-                function = basic.tn1_output,
-                initial = np.zeros(N_TN1),
-            ),
-            "TN2": FunctionLayer(
-                inputs = ["flow"],
-                function = basic.tn2_output,
-                initial = np.zeros(N_TN2),
-            ),
-            "CPU4": FunctionLayer(
-                inputs = ["CPU4", "TB1", "TN1", "TN2"],
-                function = basic.cpu4_output(cpu4_mem_gain=0.01),
-                initial = self.cpu4,
-            ),
-#           "CPU4": FunctionLayer(
-#               inputs = ["CPU4", "TB1", "TN1", "TN2"],
-#               function = cpu4_bistable_output(cpu4_mem_gain=0.05, N=400, dI=1/300, mI=1.0),
-#               initial = self.cpu4,
-#            ),
-            "CPU1": FunctionLayer(
-                inputs = ["TB1", "CPU4"],
-                function = basic.cpu1_output,
-                initial = np.zeros(N_CPU1),
-            ),
-            "motor": FunctionLayer(
-                inputs = ["CPU1"],
-                function = basic.motor_output,
-            )
-        })
