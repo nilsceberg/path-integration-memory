@@ -1,84 +1,84 @@
-from abc import abstractmethod
-from ...network import InputLayer, Network
-import numpy as np
-import scipy.optimize
+"""Experiments to reproduce results from Stone 2017."""
 
-from .constants import *
+from loguru import logger
+from numpy import float64, ndarray
+import matplotlib.pyplot as plt
 
+from ....setup import Experiment, ExperimentResults
 
-def cpu4_model(args, x):
-    return args[0] * np.cos(np.pi + 2*x + args[1])
+from . import trials
+from . import rate
+from . import plotter
 
-def tb1_model(args, x):
-    return 0.5 + np.cos(np.pi + x + args[0]) * 0.5
+class StoneResults(ExperimentResults):
+    def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot) -> None:
+        super().__init__(name, parameters)
+        self.headings = headings
+        self.velocities = velocities
+        self.log = log
+        self.cpu4_snapshot = cpu4_snapshot
 
-def fit_cpu4(data):
-    xs = np.linspace(0, 2*np.pi, N_CPU4, endpoint = False)
-    error = lambda args: cpu4_model(args, xs) - data
-    params, _ = scipy.optimize.leastsq(error, np.array([0.1, 0.01]))
-    return params
+    def report(self):
+        logger.info("plotting route")
+        fig, ax = plotter.plot_route(
+            h = self.headings,
+            v = self.velocities,
+            T_outbound = self.parameters["T_outbound"],
+            T_inbound = self.parameters["T_inbound"],
+            plot_speed = True,
+            plot_heading = True,
+            quiver_color = "black",
+            )
 
-def fit_tb1(data):
-    xs = np.linspace(0, 2*np.pi, N_TB1, endpoint = False)
-    error = lambda args: tb1_model(args, xs) - data
-    params, _ = scipy.optimize.leastsq(error, np.array([0.1]))
-    return params
+        plt.show()
 
+    def serialize(self):
+        return {
+            "headings": self.headings.tolist(),
+            "velocities": self.headings.tolist(),
 
-class CentralComplex:
-    def __init__(self, tn_prefs=np.pi/4.0,
-                 cpu4_mem_gain=0.005):
-        self.tn_prefs = tn_prefs
-        self.cpu4_mem_gain = cpu4_mem_gain
-        self.smoothed_flow = 0
+            # annoying to serialize:
+            #"log": self.log,
+            #"cpu4_snapshot": self.cpu4_snapshot,
+        }
 
-        self.tb1 = np.zeros(N_TB1)
-        self.cpu4 = 0.5 * np.ones(N_CPU4)
+class StoneExperiment(Experiment):
+    def __init__(self, parameters: dict) -> None:
+        super().__init__()
+        self.parameters = parameters
 
-        self.flow_input = InputLayer(initial = np.zeros(2))
-        self.heading_input = InputLayer()
+    def run(self, name: str) -> ExperimentResults:
+        # extract some parameters
+        T_outbound = self.parameters["T_outbound"]
+        T_inbound = self.parameters["T_inbound"]
+        noise = self.parameters["noise"]
+        cx_type = self.parameters["cx"]
 
-    @abstractmethod
-    def build_network(self) -> Network:
-        pass
+        logger.info(f"generating outbound route")
+        headings, velocities = trials.generate_route(T = T_outbound, vary_speed = True)
 
-    def setup(self):
-        self.network = self.build_network()
+        logger.info("initializing central complex")
 
-    def update(self, dt, heading, velocity):
-        flow = self.get_flow(heading, velocity)
-        self.flow_input.set(flow)
-        self.heading_input.set(np.array([heading]))
+        if cx_type == "basic":
+            raise NotImplementedError()
+            cx = cx_basic.CXBasic()
+        elif cx_type == "rate":
+            cx = rate.CXRate(noise = noise)
+        elif cx_type == "pontin":
+            cx = rate.CXRatePontin(noise = noise)
+        else:
+            raise RuntimeError("unknown cx type: " + cx_type)
 
-        self.network.step(dt)
+        cx.setup()
 
-        self.tb1 = self.network.output("TB1")
-        self.cpu4 = self.network.output("CPU4")
-        return self.network.output("motor")
+        logger.info("generating outbound path")
+        headings, velocities = trials.generate_route(
+            T = T_outbound
+        )
 
-    def estimate_position(self):
-        return fit_cpu4(self.cpu4)
+        logger.info("simulating outbound path")
+        for heading, velocity in zip(headings, velocities):
+            cx.update(1.0, heading, velocity)
 
-    def to_cartesian(self, polar):
-        return np.array([
-            np.cos(polar[1] + np.pi),
-            np.sin(polar[1] + np.pi),
-        ]) * polar[0]
+        return StoneResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None)
 
-    def estimate_heading(self):
-        return fit_tb1(self.tb1)
-
-    def get_flow(self, heading, velocity, filter_steps=0):
-        """Calculate optic flow depending on preference angles. [L, R]"""
-        A = np.array([[np.sin(heading + self.tn_prefs),
-                       np.cos(heading + self.tn_prefs)],
-                      [np.sin(heading - self.tn_prefs),
-                       np.cos(heading - self.tn_prefs)]])
-        flow = np.dot(A, velocity)
-
-        # If we are low-pass filtering speed signals (fading memory)
-        if filter_steps > 0:
-            self.smoothed_flow = (1.0 / filter_steps * flow + (1.0 -
-                                  1.0 / filter_steps) * self.smoothed_flow)
-            flow = self.smoothed_flow
-        return flow

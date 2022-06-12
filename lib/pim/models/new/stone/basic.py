@@ -3,7 +3,7 @@ import numpy as np
 from ...network import Network, RecurrentNetwork, FunctionLayer, IdentityLayer
 from .constants import *
 from .bistable import bistable_neuron
-from . import CentralComplex
+from .cx import CentralComplex
 
 
 def tb1_output(inputs):

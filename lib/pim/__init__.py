@@ -2,7 +2,7 @@ from abc import abstractmethod
 from typing import Union
 
 from .setup import Experiment
-from .models.stone import StoneExperiment
+from .models.new.stone import StoneExperiment
 from .models.winge import WingeExperiment
 
 def models(model: str, parameters: dict) -> Union[Experiment, None]:

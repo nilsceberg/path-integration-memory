@@ -3,7 +3,7 @@ from scipy.special import expit
 
 from ...network import Network, RecurrentNetwork, FunctionLayer, IdentityLayer, Layer, Output
 from .constants import *
-from . import CentralComplex
+from .cx import CentralComplex
 
 
 def gen_tb_tb_weights(weight=1.):
@@ -387,8 +387,8 @@ class CXRatePontin(CXRate):
             )
         })
 
-    def __init__(self):
-        super().__init__(noise=0.0)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         
         self.cpu4_mem_gain *= 0.5
         self.cpu1_bias = -1.0
