@@ -82,6 +82,38 @@ class RecurrentNetwork(Network):
     def output(self, layer) -> Output:
         return self._previous_outputs[layer]
 
+class RecurrentForwardNetwork(Network):
+    """Forward network that allows backward connections."""
+
+    def __init__(self, layers: Dict[str, "Layer"]):
+        super().__init__(layers)
+        self._previous_outputs = dict([(name, layer.initial) for name, layer in layers.items()])
+
+    def preprocess_layers(self):
+        self._current_outputs = {}
+        super().postprocess_layers()
+
+    def step_layers(self, dt: float):
+        for name, layer in self.layers.items():
+            layer.step(self, dt)
+            # TODO: this kind of usage probably means that output should only
+            # ever be called once; maybe we don't need to differentiate between
+            # output and step?
+            self._current_outputs[name] = layer.output(self)
+
+    def postprocess_layers(self):
+        super().postprocess_layers()
+
+        # Save current outputs as previous outputs in preparation for next step.
+        self._previous_outputs = self._current_outputs
+
+    def output(self, layer) -> Output:
+        # Use current output if available, otherwise use last time step's
+        if layer in self._current_outputs:
+            return self._current_outputs[layer]
+        else:
+            return self._previous_outputs[layer]
+
 
 class Trap():
     @staticmethod
