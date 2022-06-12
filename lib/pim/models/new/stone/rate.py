@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import expit
 
-from ...network import Network, RecurrentNetwork, FunctionLayer, IdentityLayer, Layer, Output
+from ...network import Network, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, Layer, Output
 from .constants import *
 from .cx import CentralComplex
 
@@ -122,7 +122,7 @@ class CPU4PontinLayer(CPU4Layer):
 
 class CXRate(CentralComplex):
     def build_network(self) -> Network:
-        return RecurrentNetwork({
+        return RecurrentForwardNetwork({
             "flow": self.flow_input,
             "heading": self.heading_input,
             "TL2": FunctionLayer(
@@ -334,7 +334,7 @@ class CXRate(CentralComplex):
 
 class CXRatePontin(CXRate):
     def build_network(self) -> Network:
-        return RecurrentNetwork({
+        return RecurrentForwardNetwork({
             "flow": self.flow_input,
             "heading": self.heading_input,
             "TL2": FunctionLayer(

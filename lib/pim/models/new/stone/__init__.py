@@ -1,14 +1,17 @@
 """Experiments to reproduce results from Stone 2017."""
 
+from re import A
 from loguru import logger
-from numpy import float64, ndarray
+import numpy as np
 import matplotlib.pyplot as plt
 
 from ....setup import Experiment, ExperimentResults
 
 from . import trials
 from . import rate
+from . import basic
 from . import plotter
+from . import bee_simulator
 
 class StoneResults(ExperimentResults):
     def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot) -> None:
@@ -60,8 +63,7 @@ class StoneExperiment(Experiment):
         logger.info("initializing central complex")
 
         if cx_type == "basic":
-            raise NotImplementedError()
-            cx = cx_basic.CXBasic()
+            cx = basic.CXBasic()
         elif cx_type == "rate":
             cx = rate.CXRate(noise = noise)
         elif cx_type == "pontin":
@@ -71,14 +73,34 @@ class StoneExperiment(Experiment):
 
         cx.setup()
 
+        headings = np.zeros(T_outbound + T_inbound)
+        velocities = np.zeros((T_outbound + T_inbound, 2))
+
         logger.info("generating outbound path")
-        headings, velocities = trials.generate_route(
-            T = T_outbound
+
+        headings[0:T_outbound], velocities[0:T_outbound, :] = trials.generate_route(
+            T = T_outbound,
+            vary_speed = True
         )
 
         logger.info("simulating outbound path")
-        for heading, velocity in zip(headings, velocities):
+        for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
             cx.update(1.0, heading, velocity)
+
+        for t in range(T_outbound, T_outbound + T_inbound):
+            heading = headings[t-1]
+            velocity = velocities[t-1,:]
+
+            motor = cx.update(1.0, heading, velocity)
+            rotation = motor
+
+            headings[t], velocities[t,:] = bee_simulator.get_next_state(
+                velocity=velocity,
+                heading=heading,
+                acceleration=0.1,
+                drag=trials.default_drag,
+                rotation=rotation,
+            )
 
         return StoneResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None)
 

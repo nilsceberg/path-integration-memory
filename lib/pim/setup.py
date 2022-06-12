@@ -75,12 +75,16 @@ def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool])
     )
 
     with logger.contextualize(experiment = name):
-        logger.info(f"running experiment {name} of type {experiment.__class__.__name__}")
-        results = experiment.run(name)
-        logger.info(f"done running {name}")
+        try:
+            logger.info(f"running experiment {name} of type {experiment.__class__.__name__}")
+            results = experiment.run(name)
+            logger.info(f"done running {name}")
 
-        if save:
-            results.save(setup_name, timestamp)
+            if save:
+                results.save(setup_name, timestamp)
 
-        if report:
-            results.report()
+            if report:
+                results.report()
+        except Exception:
+            logger.exception("unhandled exception")
+

@@ -1,6 +1,6 @@
 import numpy as np
 
-from ...network import Network, RecurrentNetwork, FunctionLayer, IdentityLayer
+from ...network import Network, RecurrentForwardNetwork, FunctionLayer, IdentityLayer
 from .constants import *
 from .bistable import bistable_neuron
 from .cx import CentralComplex
@@ -98,7 +98,7 @@ def motor_output(inputs):
 
 class CXBasic(CentralComplex):
     def build_network(self) -> Network:
-        return RecurrentNetwork({
+        return RecurrentForwardNetwork({
             "flow": self.flow_input,
             "TL2": self.heading_input,
             "CL1": IdentityLayer("TL2"),
@@ -119,7 +119,7 @@ class CXBasic(CentralComplex):
             ),
             "CPU4": FunctionLayer(
                 inputs = ["CPU4", "TB1", "TN1", "TN2"],
-                function = cpu4_output(cpu4_mem_gain=0.01),
+                function = cpu4_output(cpu4_mem_gain=self.cpu4_mem_gain),
                 initial = self.cpu4,
             ),
 #           "CPU4": FunctionLayer(
