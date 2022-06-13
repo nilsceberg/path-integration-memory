@@ -10,6 +10,7 @@ import "react-resizable/css/styles.css";
 
 import World from "./World";
 import Layers from "./Layers";
+import Plot from "./Plot";
 
 const Grid = WidthProvider(GridLayout);
 
@@ -102,18 +103,20 @@ function App() {
         setFrames(frames => frames + 1);
     }, [lastMessage, frames]);
 
-    const layout = [
-        { i: "controls", x: 0, y: 0, w: 12, h: 1 },
-        { i: "world", x: 0, y: 1, w: 6, h: 4 },
-        { i: "layers", x: 0, y: 8, w: 6, h: 5 },
-        { i: "steering", x: 6, y: 8, w: 6, h: 5 },
-    ];
-
     const theme = createTheme({
         palette: {
             mode: "dark"
         }
     });
+
+    const layout = [
+        { i: "controls", x: 0, y: 0, w: 12, h: 1 },
+        { i: "world", x: 0, y: 1, w: 6, h: 4 },
+        { i: "tb1", x: 6, y: 0, w: 6, h: 2 },
+        { i: "cpu4", x: 6, y: 2, w: 6, h: 2 },
+        { i: "tn1", x: 0, y: 4, w: 6, h: 2 },
+        { i: "tn2", x: 6, y: 4, w: 6, h: 2 },
+    ];
 
     const windows = useMemo(() => ({
         controls: <Window title="Controls">
@@ -122,8 +125,17 @@ function App() {
         world: <Window title="World">
             <World state={state}/>
         </Window>,
-        layers: <Window title="Layers">
-            <Layers state={state}/>
+        tb1: <Window title="TB1 / Delta7">
+            <Plot name="tb1" data={[ {y: state?.layers.TB1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+        </Window>,
+        cpu4: <Window title="CPU4 / PFN">
+            <Plot name="cpu4" data={[ {y: state?.layers.CPU4, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+        </Window>,
+        tn1: <Window title="TN1">
+            <Plot name="tn1" data={[ {y: state?.layers.TN1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+        </Window>,
+        tn2: <Window title="TN2">
+            <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
         </Window>,
     }), [state, readyState, sendJsonMessage]);
 

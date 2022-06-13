@@ -32,8 +32,8 @@ export default function World(props) {
                     top: "50%",
                     width: `${width}px`,
                     height: `${height}px`,
-                    marginLeft: -width/2 + ex * 1,
-                    marginTop: -height/2 - ey * 1,
+                    marginLeft: -width/2 + ex * 25,
+                    marginTop: -height/2 - ey * 25,
                     transform: `rotate(${eh.toFixed(0)}deg)`,
                     transformOrigin: '50% 50%',
                 }}/>
