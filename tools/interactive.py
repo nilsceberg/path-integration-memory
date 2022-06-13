@@ -10,7 +10,7 @@ from websockets.exceptions import ConnectionClosedOK
 from loguru import logger
 
 #from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
-from pim.models.stone import bee_simulator
+from pim.models.new.stone import bee_simulator
 from pim.models.new import stone
 
 # Settings
@@ -92,7 +92,10 @@ async def run_simulation():
     angular_velocity = 0.0
 
     # CX state
-    cx = stone.CentralComplex()
+    #cx = stone.rate.CXRatePontin()
+    cx = stone.basic.CXBasic()
+    cx.setup()
+
     motor = 0
     last_estimates = []
     estimate_scaling = 600.0
@@ -134,9 +137,9 @@ async def run_simulation():
             # Is this where we went wrong? trials.py line 138, 139
 
         h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
-        v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
+        v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED
 
-        motor = cx.update(0.0, h, v)
+        motor = cx.update(dt, h, v)
 
         estimated_polar = cx.estimate_position()
 

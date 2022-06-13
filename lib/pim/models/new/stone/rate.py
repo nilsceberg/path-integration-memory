@@ -65,7 +65,6 @@ motor_slope_tuned = 1.0
 motor_bias_tuned = 3.0
 
 
-
 class CPU4Layer(Layer):
     def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise):
         self.TB1 = TB1
@@ -89,8 +88,8 @@ class CPU4Layer(Layer):
         cpu4[0-7] store optic flow peaking at left 45 deg
         cpu[8-15] store optic flow peaking at right 45 deg."""
         tb1 = network.output(self.TB1)
-        tn1 = network.output(self.TN1)
-        tn2 = network.output(self.TN2)
+        tn1 = network.output(self.TN1) * dt
+        tn2 = network.output(self.TN2) * dt
 
         self.memory += (np.clip(np.dot(self.W_TN, 0.5-tn1), 0, 1) *
                      self.gain * np.dot(self.W_TB1, 1.0-tb1))
@@ -108,15 +107,15 @@ class CPU4PontinLayer(CPU4Layer):
         cpu4[0-7] store optic flow peaking at left 45 deg
         cpu[8-15] store optic flow peaking at right 45 deg."""
         tb1 = network.output(self.TB1)
-        tn1 = network.output(self.TN1)
-        tn2 = network.output(self.TN2)
+        tn1 = network.output(self.TN1) * dt
+        tn2 = network.output(self.TN2) * dt
 
         mem_update = np.dot(self.W_TN, tn2)
         mem_update -= np.dot(self.W_TB1, tb1)
         mem_update = np.clip(mem_update, 0, 1)
         mem_update *= self.gain
         self.memory += mem_update
-        self.memory -= 0.125 * self.gain
+        self.memory -= 0.125 * self.gain * dt
         self.memory = np.clip(self.memory, 0.0, 1.0)
 
 
