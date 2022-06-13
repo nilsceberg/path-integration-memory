@@ -1,7 +1,7 @@
 import useWebSocket from "react-use-websocket";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useAnimationFrame from "use-animation-frame";
-import { Card, CardContent, CardHeader, CssBaseline} from "@mui/material";
+import { Grid, Button, Card, CardContent, CardHeader, CssBaseline, Typography} from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import GridLayout, { WidthProvider } from "react-grid-layout";
 import { useDebounce, useInterval } from "usehooks-ts";
@@ -12,7 +12,7 @@ import World from "./World";
 import Layers from "./Layers";
 import Plot from "./Plot";
 
-const Grid = WidthProvider(GridLayout);
+const WidgetGrid = WidthProvider(GridLayout);
 
 function Window(props) {
     const { title, children, sx } = props;
@@ -24,27 +24,48 @@ function Window(props) {
                         ? theme.palette.grey[200]
                         : theme.palette.grey[900],
                     padding: "4px",
-                }} subheader={title}/>
-            <CardContent sx={{ flexGrow: "1" }}>{ children }</CardContent>
+                }} subheader={title} subheaderTypographyProps={{ typography: "overline", marginLeft: 1 }}/>
+            <CardContent sx={{ flexGrow: "1", padding: 1 }}>{ children }</CardContent>
         </Card>
     );
 }
 
 function Controls(props) {
     const { sendJsonMessage, readyState, state, dataRate, fps, tps } = props;
+
+    const updateControls = update => sendJsonMessage({
+        controls: {
+            ...state.controls,
+            ...update,
+        }
+    })
+
     if (readyState === 1) {
         return (
-            <div id="debugInfo">
-                <div style={{ width: 200 }}>
-                    data rate: {(dataRate / 1000 * 8).toFixed(0)}&nbsp;kb/s
-                </div>
-                <div style={{ width: 200 }}>
-                    framerate: {fps}&nbsp;Hz
-                </div>
-                <div style={{ width: 300 }}>
-                    server framerate: {tps}&nbsp;Hz
-                </div>
-            </div>
+            <Grid container spacing={1}>
+                <Grid item xs="auto">
+                    <Button variant="outlined" onClick={() => updateControls({ pause: !state?.controls?.pause })}>{state?.controls?.pause ? "Play" : "Pause"}</Button>
+                </Grid>
+                <Grid item xs="auto">
+                    <Button variant="outlined" onClick={() => updateControls({ homing: !state?.controls?.homing })}>{state?.controls?.homing ? "Inbound" : "Outbound"}</Button>
+                </Grid>
+                <Grid item xs={6}></Grid>
+                <Grid item xs>
+                    <Typography color="GrayText" typography="overline">
+                        data rate: {(dataRate / 1000 * 8).toFixed(0)}&nbsp;kb/s
+                    </Typography>
+                </Grid>
+                <Grid item xs>
+                    <Typography color="GrayText" typography="overline">
+                        framerate: {fps}&nbsp;Hz
+                    </Typography>
+                </Grid>
+                <Grid item xs>
+                    <Typography color="GrayText" typography="overline">
+                        server framerate: {tps}&nbsp;Hz
+                    </Typography>
+                </Grid>
+            </Grid>
         );
     }
     else {
@@ -148,9 +169,9 @@ function App() {
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline/>
-            <Grid layout={layout} cols={12} rowHeight={90} draggableHandle=".windowResizeHandle" isResizable>
+            <WidgetGrid layout={layout} cols={12} rowHeight={90} draggableHandle=".windowResizeHandle" isResizable>
                 {Object.entries(windows).map(([key, window]) => <div key={key}>{window}</div>)}
-            </Grid>
+            </WidgetGrid>
         </ThemeProvider>
     );
 }
