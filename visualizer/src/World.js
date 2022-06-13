@@ -6,6 +6,8 @@ export default function World(props) {
     const { state } = props;
     if (!state) return null;
 
+    const scale = 10.0;
+
     const [x, y] = state.position;
     const heading = -state.heading * 180 / Math.PI + 90;
 
@@ -32,8 +34,8 @@ export default function World(props) {
                     top: "50%",
                     width: `${width}px`,
                     height: `${height}px`,
-                    marginLeft: -width/2 + ex * 25,
-                    marginTop: -height/2 - ey * 25,
+                    marginLeft: -width/2 + ex * scale, // * 25,
+                    marginTop: -height/2 - ey * scale, // * 25,
                     transform: `rotate(${eh.toFixed(0)}deg)`,
                     transformOrigin: '50% 50%',
                 }}/>
@@ -51,8 +53,8 @@ export default function World(props) {
                     top: "50%",
                     width: `${width}px`,
                     height: `${height}px`,
-                    marginLeft: -width/2 + x * 1,
-                    marginTop: -height/2 - y * 1,
+                    marginLeft: -width/2 + x * scale,
+                    marginTop: -height/2 - y * scale,
                     transform: `rotate(${heading.toFixed(0)}deg)`,
                     transformOrigin: '50% 50%',
                 }}/>
