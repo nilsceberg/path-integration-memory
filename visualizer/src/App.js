@@ -67,6 +67,7 @@ function App() {
     const [tps, setTps] = useState(0);
 
     const [lastMessage, setLastMessage] = useState(null);
+    const [realtimeState, setRealtimeState] = useState(null);
     const [state, setState] = useState(null);
 
     const onMessage = useCallback(event => {
@@ -83,7 +84,11 @@ function App() {
         setDataRate(bytesReceived);
         setFps(frames);
         setTps(ticks);
-    }, [bytesReceived, frames, ticks]);
+    }, [bytesReceived, frames, ticks, realtimeState]);
+
+    const updateDebouncedState = useCallback(() => {
+        setState(realtimeState);
+    }, [realtimeState]);
 
     const {
         sendJsonMessage,
@@ -97,9 +102,10 @@ function App() {
     });
 
     useInterval(updatePeriodic, 1000);
+    useInterval(updateDebouncedState, 500);
 
     useAnimationFrame(() => {
-        setState(lastMessage);
+        setRealtimeState(lastMessage);
         setFrames(frames => frames + 1);
     }, [lastMessage, frames]);
 
@@ -120,10 +126,10 @@ function App() {
 
     const windows = useMemo(() => ({
         controls: <Window title="Controls">
-            <Controls state={state} readyState={readyState} sendJsonMessage={sendJsonMessage} dataRate={dataRate} tps={tps} fps={fps}/>
+            <Controls state={realtimeState} readyState={readyState} sendJsonMessage={sendJsonMessage} dataRate={dataRate} tps={tps} fps={fps}/>
         </Window>,
         world: <Window title="World">
-            <World state={state}/>
+            <World state={realtimeState}/>
         </Window>,
         tb1: <Window title="TB1 / Delta7">
             <Plot name="tb1" data={[ {y: state?.layers.TB1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
@@ -137,7 +143,7 @@ function App() {
         tn2: <Window title="TN2">
             <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
         </Window>,
-    }), [state, readyState, sendJsonMessage]);
+    }), [realtimeState, state, readyState, sendJsonMessage]);
 
     return (
         <ThemeProvider theme={theme}>
