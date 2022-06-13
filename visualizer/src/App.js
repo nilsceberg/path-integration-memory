@@ -1,5 +1,5 @@
 import useWebSocket from "react-use-websocket";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useAnimationFrame from "use-animation-frame";
 import { Card, CardContent, CardHeader, CssBaseline} from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -57,18 +57,6 @@ function Controls(props) {
 }
 
 function App() {
-    const {
-        sendJsonMessage,
-        lastMessage,
-        lastJsonMessage,
-        readyState
-    } = useWebSocket("ws://localhost:8001", {
-        retryOnError: true,
-        reconnectInterval: 1000,
-        reconnectAttempts: 10000000,
-        shouldReconnect: () => true,
-    });
-
     const [bytesReceived, setBytesReceived] = useState(0);
     const [dataRate, setDataRate] = useState(0);
 
@@ -78,29 +66,46 @@ function App() {
     const [fps, setFps] = useState(0);
     const [tps, setTps] = useState(0);
 
-    useEffect(() => {
-        setBytesReceived(bytesReceived + (lastMessage?.data.length || 0));
-        setTicks(ticks + 1);
-    }, [lastMessage]);
+    const [lastMessage, setLastMessage] = useState(null);
+    const [state, setState] = useState(null);
 
-    useInterval(() => {
-        setDataRate(bytesReceived);
-        setFps(frames);
-        setTps(ticks);
+    const onMessage = useCallback(event => {
+        const data = JSON.parse(event.data);
+        setLastMessage(data); // Is it JSON?
+        setBytesReceived(bytesReceived => bytesReceived + (event.data.length || 0));
+        setTicks(ticks => ticks + 1);
+    }, [bytesReceived, ticks]);
+
+    const updatePeriodic = useCallback(() => {
         setBytesReceived(0);
         setFrames(0);
         setTicks(0);
-    }, 1000);
+        setDataRate(bytesReceived);
+        setFps(frames);
+        setTps(ticks);
+    }, [bytesReceived, frames, ticks]);
 
-    const [state, setState] = useState(null);
+    const {
+        sendJsonMessage,
+        readyState,
+    } = useWebSocket("ws://localhost:8001", {
+        retryOnError: true,
+        reconnectInterval: 1000,
+        reconnectAttempts: 10000000,
+        shouldReconnect: () => true,
+        onMessage: onMessage,
+    });
+
+    useInterval(updatePeriodic, 1000);
+
     useAnimationFrame(() => {
-        setState(lastJsonMessage);
-        setFrames(frames + 1);
-    }, [lastJsonMessage]);
+        setState(lastMessage);
+        setFrames(frames => frames + 1);
+    }, [lastMessage, frames]);
 
     const layout = [
         { i: "controls", x: 0, y: 0, w: 12, h: 1 },
-        { i: "world", x: 0, y: 1, w: 12, h: 8 },
+        { i: "world", x: 0, y: 1, w: 6, h: 4 },
         { i: "layers", x: 0, y: 8, w: 6, h: 5 },
         { i: "steering", x: 6, y: 8, w: 6, h: 5 },
     ];
