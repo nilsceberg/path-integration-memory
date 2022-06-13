@@ -117,11 +117,11 @@ function App() {
 
     const layout = [
         { i: "controls", x: 0, y: 0, w: 12, h: 1 },
-        { i: "world", x: 0, y: 1, w: 6, h: 4 },
-        { i: "tb1", x: 6, y: 0, w: 6, h: 2 },
-        { i: "cpu4", x: 6, y: 2, w: 6, h: 2 },
-        { i: "tn1", x: 0, y: 4, w: 6, h: 2 },
-        { i: "tn2", x: 6, y: 4, w: 6, h: 2 },
+        { i: "world", x: 0, y: 1, w: 6, h: 6 },
+        { i: "tb1", x: 6, y: 0, w: 6, h: 3 },
+        { i: "cpu4", x: 6, y: 3, w: 6, h: 3 },
+        { i: "tn1", x: 0, y: 6, w: 6, h: 3 },
+        { i: "tn2", x: 6, y: 6, w: 6, h: 3 },
     ];
 
     const windows = useMemo(() => ({
@@ -138,17 +138,17 @@ function App() {
             <Plot name="cpu4" data={[ {y: state?.layers.CPU4, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
         </Window>,
         tn1: <Window title="TN1">
-            <Plot name="tn1" data={[ {y: state?.layers.TN1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+            <Plot name="tn1" data={[ {y: state?.layers.TN1, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
         </Window>,
         tn2: <Window title="TN2">
-            <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+            <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
         </Window>,
     }), [realtimeState, state, readyState, sendJsonMessage]);
 
     return (
         <ThemeProvider theme={theme}>
             <CssBaseline/>
-            <Grid layout={layout} cols={12} rowHeight={120} draggableHandle=".windowResizeHandle" isResizable>
+            <Grid layout={layout} cols={12} rowHeight={90} draggableHandle=".windowResizeHandle" isResizable>
                 {Object.entries(windows).map(([key, window]) => <div key={key}>{window}</div>)}
             </Grid>
         </ThemeProvider>
