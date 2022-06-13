@@ -16,6 +16,8 @@ const WidgetGrid = WidthProvider(GridLayout);
 
 function Window(props) {
     const { title, children, sx } = props;
+    const [ hidden, setHidden ] = useState(false);
+
     return (
         <Card sx={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", ...sx }}>
             <CardHeader className="windowResizeHandle" sx={{
@@ -23,9 +25,9 @@ function Window(props) {
                         theme.palette.mode === "light"
                         ? theme.palette.grey[200]
                         : theme.palette.grey[900],
-                    padding: "4px",
-                }} subheader={title} subheaderTypographyProps={{ typography: "overline", marginLeft: 1 }}/>
-            <CardContent sx={{ flexGrow: "1", padding: 1 }}>{ children }</CardContent>
+                    padding: "0px",
+                }} subheader={<Button onClick={() => setHidden(hidden => !hidden)}>{title}</Button>} subheaderTypographyProps={{ typography: "overline", marginLeft: 0, }}/>
+            <CardContent sx={{ flexGrow: "1", padding: 1 }}>{ !hidden ? children : null }</CardContent>
         </Card>
     );
 }
@@ -189,18 +191,18 @@ function App() {
         world: <Window title="World">
             <World state={realtimeState}/>
         </Window>,
-//        tb1: <Window title="TB1 / Delta7">
-//            <Plot name="tb1" data={[ {y: state?.layers.TB1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-//        </Window>,
-//        cpu4: <Window title="CPU4 / PFN">
-//            <Plot name="cpu4" data={[ {y: state?.layers.CPU4, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-//        </Window>,
-//        tn1: <Window title="TN1">
-//            <Plot name="tn1" data={[ {y: state?.layers.TN1, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-//        </Window>,
-//        tn2: <Window title="TN2">
-//            <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-//        </Window>,
+        tb1: <Window title="TB1 / Delta7">
+            <Plot name="tb1" data={[ {y: state?.layers.TB1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+        </Window>,
+        cpu4: <Window title="CPU4 / PFN">
+            <Plot name="cpu4" data={[ {y: state?.layers.CPU4, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+        </Window>,
+        tn1: <Window title="TN1">
+            <Plot name="tn1" data={[ {y: state?.layers.TN1, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+        </Window>,
+        tn2: <Window title="TN2">
+            <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+        </Window>,
     }), [realtimeState, state, readyState, sendJsonMessage]);
 
     return (
