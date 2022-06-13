@@ -10,6 +10,7 @@ import "react-resizable/css/styles.css";
 
 import World from "./World";
 import Layers from "./Layers";
+import Steering from "./Steering";
 
 const Grid = WidthProvider(GridLayout);
 
@@ -99,8 +100,9 @@ function App() {
 
     const layout = [
         { i: "controls", x: 0, y: 0, w: 12, h: 1 },
-        { i: "world", x: 0, y: 1, w: 6, h: 5 },
-        { i: "layers", x: 6, y: 1, w: 6, h: 5 },
+        { i: "world", x: 0, y: 1, w: 12, h: 8 },
+        { i: "layers", x: 0, y: 8, w: 6, h: 5 },
+        { i: "steering", x: 6, y: 8, w: 6, h: 5 },
     ];
 
     const theme = createTheme({
@@ -116,8 +118,11 @@ function App() {
         world: <Window title="World">
             <World state={state}/>
         </Window>,
-        layers: <Window title="Layers">
-            <Layers state={state}/>
+        //layers: <Window title="Layers">
+        //    <Layers state={state}/>
+        //</Window>,
+        steering: <Window title="Steering">
+            {state ? <Steering state={state}/> : null}
         </Window>,
     }), [state, readyState, sendJsonMessage]);
 
