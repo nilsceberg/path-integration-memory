@@ -19,6 +19,7 @@ export default function World(props) {
 
     return (
         <Paper elevation={0} sx={{ width: "100%", height: "100%", backgroundColor: "#323232" }}>
+            <div style={{color: "gray", position: "absolute", left: "50%", top: "50%", marginLeft: "-20px"}}>HOME</div>
             <Spritesheet
                 image={beeImg}
                 widthFrame={23}
