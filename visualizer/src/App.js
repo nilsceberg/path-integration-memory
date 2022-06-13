@@ -4,13 +4,12 @@ import useAnimationFrame from "use-animation-frame";
 import { Card, CardContent, CardHeader, CssBaseline} from "@mui/material";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import GridLayout, { WidthProvider } from "react-grid-layout";
-import { useInterval } from "usehooks-ts";
+import { useDebounce, useInterval } from "usehooks-ts";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 import World from "./World";
 import Layers from "./Layers";
-import Steering from "./Steering";
 
 const Grid = WidthProvider(GridLayout);
 
@@ -123,11 +122,8 @@ function App() {
         world: <Window title="World">
             <World state={state}/>
         </Window>,
-        //layers: <Window title="Layers">
-        //    <Layers state={state}/>
-        //</Window>,
-        steering: <Window title="Steering">
-            {state ? <Steering state={state}/> : null}
+        layers: <Window title="Layers">
+            <Layers state={state}/>
         </Window>,
     }), [state, readyState, sendJsonMessage]);
 
