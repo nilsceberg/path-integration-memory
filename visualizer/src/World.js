@@ -6,7 +6,7 @@ export default function World(props) {
     const { state } = props;
     if (!state) return null;
 
-    const scale = 10.0;
+    const scale = 20.0;
 
     const [x, y] = state.position;
     const heading = -state.heading * 180 / Math.PI + 90;

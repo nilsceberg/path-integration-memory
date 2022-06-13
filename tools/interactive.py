@@ -17,13 +17,19 @@ from pim.models.new import stone
 TIME_STEP = 0.016
 MAX_SPEED = 0.90
 MAX_ANGULAR_SPEED = 3.0
-TURN_SHARPNESS = 1.0
+TURN_SHARPNESS = 30.0
 
 # Globals:
 connections = {}
 auto = False
-homing = True
+homing = False
 pause = False
+input = {
+    "forward": False,
+    "backward": False,
+    "left": False,
+    "right": False,
+}
 
 async def socket_send(socket, connection_uuid, message):
     encoded = json.dumps(message)
@@ -48,6 +54,7 @@ async def perform_socket_io(connection_uuid, socket, io, args = None):
 async def handle_connection(socket):
     global pause
     global homing
+    global input
 
     connection_uuid = uuid.uuid4()
     connections[connection_uuid] = socket
@@ -58,13 +65,17 @@ async def handle_connection(socket):
         if message is None:
             break
 
-        logger.debug("received: {}", message)
+        logger.trace("received: {}", message)
 
         # assume we can parse as json
         message = json.loads(message)
 
-        homing = message["controls"]["homing"]
-        pause = message["controls"]["pause"]
+        if "controls" in message:
+            homing = message["controls"]["homing"]
+            pause = message["controls"]["pause"]
+
+        if "input" in message:
+            input = message["input"]
 
 def publish(message):
     for connection_uuid, socket in connections.items():
@@ -100,6 +111,7 @@ def serialize_state(
 async def run_simulation():
     global pause
     global homing
+    global input
 
     logger.info("starting simulation")
 
@@ -115,7 +127,7 @@ async def run_simulation():
 
     motor = 0
     last_estimates = []
-    estimate_scaling = 600.0
+    estimate_scaling = 1500.0
 
     estimated_polar = np.zeros(2)
     estimated_position = np.zeros(2)
@@ -132,28 +144,32 @@ async def run_simulation():
 
         if not pause:
             # simulate
-            speed = 1.0
+            speed = 0.0
+            angular_velocity = 0.0
+
             if homing:
-                angular_velocity = motor
+                speed = 1.0
+                angular_velocity = motor * TURN_SHARPNESS
             else:
-                angular_velocity = angular_velocity
+                if input["left"]:
+                    angular_velocity += 1.0
+                if input["right"]:
+                    angular_velocity -= 1.0
+                if input["forward"]:
+                    speed += 1.0
+                    #velocity += np.array([0, -1])
+                if input["backward"]:
+                    speed -= 1.0
 
-            heading = bee_simulator.rotate(heading, angular_velocity)
-            direction = np.array([np.cos(heading), np.sin(heading)])
-            velocity = direction * speed * MAX_SPEED * dt
-
-            if speed > 0.0001:
-                # apply velocity
-                position += velocity
-
-            heading = bee_simulator.rotate(heading, angular_velocity)
+            angular_velocity = angular_velocity * MAX_ANGULAR_SPEED
+            heading = bee_simulator.rotate(heading, angular_velocity * dt)
 
             # Velocity is represented as sin, cos in bee_simulator.py / thrust. Mistake? We flip it when inputting to update_cells
             direction = np.array([np.cos(heading), np.sin(heading)])
-            velocity = direction * speed * MAX_SPEED * dt
-
-            if speed > 0.00001:
-                position += velocity
+            velocity = direction * speed * MAX_SPEED
+           
+            if speed > 0.0001:
+                position += velocity * dt
                 # Is this where we went wrong? trials.py line 138, 139
 
             h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)

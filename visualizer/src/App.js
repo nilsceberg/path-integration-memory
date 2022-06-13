@@ -38,7 +38,7 @@ function Controls(props) {
             ...state.controls,
             ...update,
         }
-    })
+    });
 
     if (readyState === 1) {
         return (
@@ -91,12 +91,29 @@ function App() {
     const [realtimeState, setRealtimeState] = useState(null);
     const [state, setState] = useState(null);
 
+    const [input, setInput] = useState({
+        forward: false,
+        backward: false,
+        left: false,
+        right: false,
+    });
+
+    const keymap = {
+        "ArrowUp": "forward",
+        "ArrowDown": "backward",
+        "ArrowLeft": "left",
+        "ArrowRight": "right",
+    };
+
     const onMessage = useCallback(event => {
         const data = JSON.parse(event.data);
         setLastMessage(data); // Is it JSON?
         setBytesReceived(bytesReceived => bytesReceived + (event.data.length || 0));
         setTicks(ticks => ticks + 1);
-    }, [bytesReceived, ticks]);
+
+        // After each tick from the server, respond with out own input, if we have any:
+        sendJsonMessage({ input });
+    }, [bytesReceived, ticks, input]);
 
     const updatePeriodic = useCallback(() => {
         setBytesReceived(0);
@@ -130,6 +147,26 @@ function App() {
         setFrames(frames => frames + 1);
     }, [lastMessage, frames]);
 
+    const onKeyDown = (event) => {
+        if (event.key in keymap) {
+            setInput(input => ({ ...input, [keymap[event.key]]: true }));
+        }
+    };
+    const onKeyUp = (event) => {
+        if (event.key in keymap) {
+            setInput(input => ({ ...input, [keymap[event.key]]: false }));
+        }
+    };
+
+    useEffect(() => {
+        window.addEventListener("keydown", onKeyDown);
+        window.addEventListener("keyup", onKeyUp);
+        return () => {
+            window.removeEventListener("keydown", onKeyDown);
+            window.removeEventListener("keyup", onKeyUp);
+        }
+    }, []);
+
     const theme = createTheme({
         palette: {
             mode: "dark"
@@ -152,18 +189,18 @@ function App() {
         world: <Window title="World">
             <World state={realtimeState}/>
         </Window>,
-        tb1: <Window title="TB1 / Delta7">
-            <Plot name="tb1" data={[ {y: state?.layers.TB1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-        </Window>,
-        cpu4: <Window title="CPU4 / PFN">
-            <Plot name="cpu4" data={[ {y: state?.layers.CPU4, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-        </Window>,
-        tn1: <Window title="TN1">
-            <Plot name="tn1" data={[ {y: state?.layers.TN1, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-        </Window>,
-        tn2: <Window title="TN2">
-            <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
-        </Window>,
+//        tb1: <Window title="TB1 / Delta7">
+//            <Plot name="tb1" data={[ {y: state?.layers.TB1, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+//        </Window>,
+//        cpu4: <Window title="CPU4 / PFN">
+//            <Plot name="cpu4" data={[ {y: state?.layers.CPU4, type: "line"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+//        </Window>,
+//        tn1: <Window title="TN1">
+//            <Plot name="tn1" data={[ {y: state?.layers.TN1, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+//        </Window>,
+//        tn2: <Window title="TN2">
+//            <Plot name="tn2" data={[ {y: state?.layers.TN2, type: "bar"} ]} layout={{ yaxis: { range: [0, 1] } }}/>
+//        </Window>,
     }), [realtimeState, state, readyState, sendJsonMessage]);
 
     return (
