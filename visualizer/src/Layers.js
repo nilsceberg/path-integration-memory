@@ -5,7 +5,7 @@ import { useDebounce, useEffectOnce } from "usehooks-ts";
 export default function Layers(props) {
     const { state } = props;
 
-    const tb1 = state?.layers.tb1;
+    const tb1 = state?.layers.TB1;
 
     const tb1Layout = useMemo(() => ({
         title: "TB1",

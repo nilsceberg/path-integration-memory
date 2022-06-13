@@ -147,17 +147,17 @@ async def run_simulation():
         estimated_position = np.mean(np.array(last_estimates), 0)
         estimated_heading = cx.estimate_heading()
 
+        layers = dict([
+            (name, np.array(cx.network.output(name))) for name in cx.network.layers.keys()
+        ])
+
         publish(serialize_state(
             position,
             heading,
             estimated_polar,
             estimated_position,
             estimated_heading,
-            {
-                "motor": np.array([motor]),
-                "cpu4": cx.cpu4,
-                "tb1": cx.tb1,
-            }
+            layers,
         ))
 
 
