@@ -44,6 +44,7 @@ def generate_route(T=1500, mean_acc=default_acc, drag=default_drag,
 
     for t in range(1, T):
         headings[t], velocity[t, :] = bee_simulator.get_next_state(
+            dt=1.0,
             heading=headings[t-1], velocity=velocity[t-1, :],
             rotation=rotation[t], acceleration=acceleration[t], drag=drag)
     return headings, velocity

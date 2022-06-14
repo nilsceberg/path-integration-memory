@@ -45,22 +45,25 @@ class StoneResults(ExperimentResults):
             #"cpu4_snapshot": self.cpu4_snapshot,
         }
 
+    def reconstruct_path(self):
+        position = np.zeros(2)
+        positions = [position]
+        for velocity in self.velocities:
+            position = position + velocity
+            positions.append(position)
+        return positions
+
+    def closest_position(self):
+        path = self.reconstruct_path()
+        return min(path[self.parameters["T_outbound"]:], key = np.linalg.norm)
+
 class StoneExperiment(Experiment):
     def __init__(self, parameters: dict) -> None:
         super().__init__()
         self.parameters = parameters
 
-    def run(self, name: str) -> ExperimentResults:
-        # extract some parameters
-        T_outbound = self.parameters["T_outbound"]
-        T_inbound = self.parameters["T_inbound"]
         noise = self.parameters["noise"]
         cx_type = self.parameters["cx"]
-
-        logger.info(f"generating outbound route")
-        headings, velocities = trials.generate_route(T = T_outbound, vary_speed = True)
-
-        logger.info("initializing central complex")
 
         if cx_type == "basic":
             cx = basic.CXBasic()
@@ -71,7 +74,23 @@ class StoneExperiment(Experiment):
         else:
             raise RuntimeError("unknown cx type: " + cx_type)
 
-        cx.setup()
+        self.cx = cx
+        self.cx.setup()
+
+    def run(self, name: str) -> ExperimentResults:
+        # extract some parameters
+        T_outbound = self.parameters["T_outbound"]
+        T_inbound = self.parameters["T_inbound"]
+        noise = self.parameters["noise"]
+        cx_type = self.parameters["cx"]
+        time_subdivision = self.parameters["time_subdivision"] if "time_subdivision" in self.parameters else 1
+
+        logger.info(f"generating outbound route")
+        headings, velocities = trials.generate_route(T = T_outbound, vary_speed = True)
+        #headings = np.repeat(headings, time_subdivision)
+        #headings = np.repeat(headings, time_subdivision)
+
+        logger.info("initializing central complex")
 
         headings = np.zeros(T_outbound + T_inbound)
         velocities = np.zeros((T_outbound + T_inbound, 2))
@@ -84,23 +103,29 @@ class StoneExperiment(Experiment):
         )
 
         logger.info("simulating outbound path")
+        dt = 1.0 / time_subdivision
         for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
-            cx.update(1.0, heading, velocity)
+            for ts in range(time_subdivision):
+                self.cx.update(dt, heading, velocity)
 
         for t in range(T_outbound, T_outbound + T_inbound):
             heading = headings[t-1]
             velocity = velocities[t-1,:]
 
-            motor = cx.update(1.0, heading, velocity)
-            rotation = motor
+            for ts in range(time_subdivision):
+                motor = self.cx.update(dt, heading, velocity)
+                rotation = motor
 
-            headings[t], velocities[t,:] = bee_simulator.get_next_state(
-                velocity=velocity,
-                heading=heading,
-                acceleration=0.1,
-                drag=trials.default_drag,
-                rotation=rotation,
-            )
+                heading, velocity = bee_simulator.get_next_state(
+                    dt=dt,
+                    velocity=velocity,
+                    heading=heading,
+                    acceleration=0.1,
+                    drag=trials.default_drag,
+                    rotation=rotation,
+                )
+
+            headings[t], velocities[t,:] = heading, velocity
 
         return StoneResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None)
 

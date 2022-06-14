@@ -62,26 +62,26 @@ def get_flow(heading, velocity, pref_angle=np.pi/4):
     return np.dot(A, velocity)
 
 
-def rotate(theta, r):
+def rotate(dt, theta, r):
     """Return new heading after a rotation around Z axis."""
-    return (theta + r + np.pi) % (2.0 * np.pi) - np.pi
+    return (theta + r * dt + np.pi) % (2.0 * np.pi) - np.pi
 
 
-def thrust(theta, acceleration):
+def thrust(dt, theta, acceleration):
     """Thrust vector from current heading and acceleration
 
     theta: clockwise radians around z-axis, where 0 is forward
     acceleration: float where max speed is ....?!?
     """
-    return np.array([np.sin(theta), np.cos(theta)]) * acceleration
+    return np.array([np.sin(theta), np.cos(theta)]) * acceleration * dt
 
 
-def get_next_state(heading, velocity, rotation, acceleration, drag=0.5):
+def get_next_state(dt, heading, velocity, rotation, acceleration, drag=0.5):
     """Get new heading and velocity, based on relative rotation and
     acceleration and linear drag."""
-    theta = rotate(heading, rotation)
-    v = velocity + thrust(theta, acceleration)
-    v -= drag * v
+    theta = rotate(dt, heading, rotation)
+    v = velocity + thrust(dt, theta, acceleration)
+    v *= (1.0 - drag)**dt
     return theta, v
 
 

@@ -81,7 +81,6 @@ class CPU4Layer(Layer):
         mem_update -= 0.5 * (0.5 - tn1.reshape(2, 1))
 
         # Constant purely to visualise same as rate-based model
-        # multiply with dt here or multiply incoming TN?
         mem_reshaped += self.gain * mem_update * dt
 
         self.memory = np.clip(mem_reshaped.reshape(-1), 0.0, 1.0)

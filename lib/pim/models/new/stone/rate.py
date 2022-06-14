@@ -88,12 +88,12 @@ class CPU4Layer(Layer):
         cpu4[0-7] store optic flow peaking at left 45 deg
         cpu[8-15] store optic flow peaking at right 45 deg."""
         tb1 = network.output(self.TB1)
-        tn1 = network.output(self.TN1) * dt
-        tn2 = network.output(self.TN2) * dt
+        tn1 = network.output(self.TN1)
+        tn2 = network.output(self.TN2)
 
         self.memory += (np.clip(np.dot(self.W_TN, 0.5-tn1), 0, 1) *
-                     self.gain * np.dot(self.W_TB1, 1.0-tb1))
-        self.memory -= self.gain * 0.25 * np.dot(self.W_TN, tn2)
+                     self.gain * np.dot(self.W_TB1, 1.0-tb1)) * dt
+        self.memory -= self.gain * 0.25 * np.dot(self.W_TN, tn2) * dt
         self.memory = np.clip(self.memory, 0.0, 1.0)
 
     def output(self, network: Network) -> Output:
@@ -107,14 +107,14 @@ class CPU4PontinLayer(CPU4Layer):
         cpu4[0-7] store optic flow peaking at left 45 deg
         cpu[8-15] store optic flow peaking at right 45 deg."""
         tb1 = network.output(self.TB1)
-        tn1 = network.output(self.TN1) * dt
-        tn2 = network.output(self.TN2) * dt
+        tn1 = network.output(self.TN1)
+        tn2 = network.output(self.TN2)
 
         mem_update = np.dot(self.W_TN, tn2)
         mem_update -= np.dot(self.W_TB1, tb1)
         mem_update = np.clip(mem_update, 0, 1)
         mem_update *= self.gain
-        self.memory += mem_update
+        self.memory += mem_update * dt
         self.memory -= 0.125 * self.gain * dt
         self.memory = np.clip(self.memory, 0.0, 1.0)
 
@@ -149,15 +149,7 @@ class CXRate(CentralComplex):
                 function = self.tn2_output,
                 initial = np.zeros(N_TN2),
             ),
-            "CPU4": CPU4Layer(
-                "TB1", "TN1", "TN2",
-                self.W_TN_CPU4,
-                self.W_TB1_CPU4,
-                self.cpu4_mem_gain,
-                self.cpu4_slope,
-                self.cpu4_bias,
-                self.noise,
-            ),
+            "CPU4": self.build_cpu4_layer(),
             "CPU1": FunctionLayer(
                 inputs = ["TB1", "CPU4"],
                 function = self.cpu1_output,
@@ -169,10 +161,22 @@ class CXRate(CentralComplex):
             )
         })
 
+    def build_cpu4_layer(self) -> Layer:
+        return self.CPU4LayerClass(
+            "TB1", "TN1", "TN2",
+            self.W_TN_CPU4,
+            self.W_TB1_CPU4,
+            self.cpu4_mem_gain,
+            self.cpu4_slope,
+            self.cpu4_bias,
+            self.noise,
+        )
+
     """Class to keep a set of parameters for a model together.
     No state is held in the class currently."""
     def __init__(self,
                  noise=0.1,
+                 CPU4LayerClass = CPU4Layer,
                  tl2_slope=tl2_slope_tuned,
                  tl2_bias=tl2_bias_tuned,
                  tl2_prefs=np.tile(np.linspace(0, 2*np.pi, N_TB1,
@@ -190,6 +194,7 @@ class CXRate(CentralComplex):
                  weight_noise=0.0,
                  ):
         super().__init__()
+        self.CPU4LayerClass = CPU4LayerClass
 
         # Default noise used by the model for all layers
         self.noise = noise
@@ -361,15 +366,7 @@ class CXRatePontin(CXRate):
                 function = self.tn2_output,
                 initial = np.zeros(N_TN2),
             ),
-            "CPU4": CPU4PontinLayer(
-                "TB1", "TN1", "TN2",
-                self.W_TN_CPU4,
-                self.W_TB1_CPU4,
-                self.cpu4_mem_gain,
-                self.cpu4_slope,
-                self.cpu4_bias,
-                self.noise,
-            ),
+            "CPU4": self.build_cpu4_layer(),
             "Pontin": FunctionLayer(
                 inputs = ["CPU4"],
                 function = self.pontin_output,
@@ -386,8 +383,8 @@ class CXRatePontin(CXRate):
             )
         })
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, CPU4LayerClass = CPU4PontinLayer, **kwargs):
+        super().__init__(CPU4LayerClass = CPU4LayerClass, **kwargs)
         
         self.cpu4_mem_gain *= 0.5
         self.cpu1_bias = -1.0
