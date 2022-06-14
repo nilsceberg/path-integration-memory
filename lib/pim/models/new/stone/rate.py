@@ -33,17 +33,6 @@ def noisify_weights(W, noise=0.01):
     N_nonzero = N * W
     return W + N_nonzero
 
-def decode_position(cpu4_reshaped, cpu4_mem_gain):
-    """Decode position from sinusoid in to polar coordinates.
-    Amplitude is distance, Angle is angle from nest outwards.
-    Without offset angle gives the home vector.
-    Input must have shape of (2, -1)"""
-    signal = np.sum(cpu4_reshaped, axis=0)
-    fund_freq = np.fft.fft(signal)[1]
-    angle = -np.angle(np.conj(fund_freq))
-    distance = np.absolute(fund_freq) / cpu4_mem_gain
-    return angle, distance
-
 
 class CPU4Layer(Layer):
     def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise):
