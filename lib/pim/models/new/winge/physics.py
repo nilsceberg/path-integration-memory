@@ -52,3 +52,53 @@ class Device:
         g33 = 1e-9/Cmem/self.params['Rstore'] # ns^-1 # GHz
         # Modifying this as it is g33 that matter for a system in equilibrium
         return g33**-1 
+
+
+    def inverse_gain_coefficient(self, eta_handle, Vthres) :
+        # Remember nA
+        Rsum=self.params['Rstore']+self.params['Rexc']
+        max_Vg = Vthres*self.params['Rstore']/Rsum
+        Iexc = Vthres/Rsum*1e9 # nA
+        Isd = self.transistorIV(max_Vg) 
+        Iout = eta_handle(Isd)*Isd
+        return Iexc/Iout, Iexc
+
+    def transistorIV(self,Vg,Vt_vec=None) :
+        """Reads gate voltage and calculated transistor current based on 
+        parameters in p_dict. Can take a vector of individual threshold currents 
+        to introduce fluctuations in the system. Returns current in nA."""
+
+        if Vt_vec is None :
+            Vt = self.params['Vt'] 
+            return np.piecewise(Vg, [Vg<Vt, Vg>=Vt], [self.Id_sub_0, self.Id_sat_0],Vt) 
+        else :
+            Vt = Vt_vec
+            # This should work even when Vt is an array
+            return np.piecewise(Vg, [Vg<Vt, Vg>=Vt], [self.Id_sub, self.Id_sat],Vt,Vg<Vt)   
+    
+
+    # Supply transistor functionality, the method transistorIV can be ported 
+    def Id_sub(self,Vg,Vt,mask) :
+        return self.params['I_Vt']*np.exp((Vg-Vt[mask])/self.params['m']/self.kT)
+
+    def Id_sat(self,Vg,Vt,mask) :
+        # Invert the mask for this one
+        return self.params['I_Vt'] + self.linslope*(Vg-Vt[mask==False])
+    
+    def Id_sub_0(self,Vg,Vt) :
+        return self.params['I_Vt']*np.exp((Vg-Vt)/self.params['m']/self.kT)
+
+    def Id_sat_0(self,Vg,Vt) :
+        return self.params['I_Vt'] + self.linslope*(Vg-Vt)
+
+    def eta_ABC(self,I) :
+        # calculate efficiency from ABC model
+        # ABC model is in uA, so multiply I by 1e-3
+        return self.ABC(I*1e-3,self.params['AB'],self.params['CB']) 
+
+    # LED efficiency physics as well
+    def ABC(self,I,AB,CB) :
+        # ABC model adapted to currents
+        eta = I/(AB + I + CB*I**2)
+        return eta
+        
