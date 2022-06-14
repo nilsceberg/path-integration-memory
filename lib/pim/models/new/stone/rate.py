@@ -45,27 +45,6 @@ def decode_position(cpu4_reshaped, cpu4_mem_gain):
     return angle, distance
 
 
-# TUNED PARAMETERS:
-tl2_slope_tuned = 6.8
-tl2_bias_tuned = 3.0
-
-cl1_slope_tuned = 3.0
-cl1_bias_tuned = -0.5
-
-tb1_slope_tuned = 5.0
-tb1_bias_tuned = 0.0
-
-cpu4_slope_tuned = 5.0
-cpu4_bias_tuned = 2.5
-
-cpu1_slope_tuned = 5.0
-cpu1_bias_tuned = 2.5
-
-motor_slope_tuned = 1.0
-motor_bias_tuned = 3.0
-
-
-
 class CPU4Layer(Layer):
     def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise):
         self.TB1 = TB1
