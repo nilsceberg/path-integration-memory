@@ -36,7 +36,7 @@ code {
     monospace;
 }
 
-#debugInfo {
+/*#debugInfo {
   display: flex;
   flex-direction: row;
   color: gray;
@@ -45,4 +45,4 @@ code {
 #debugInfo > div:not(:first-child) {
   border-left: 1px solid gray;
   padding-left: 20px;
-}
+}*/

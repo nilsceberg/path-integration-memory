@@ -1,34 +1,49 @@
 import { useEffect, useMemo, useState } from "react";
-import { Bar, Line, BarChart, CartesianGrid, Legend, Tooltip, XAxis, YAxis, ComposedChart, ResponsiveContainer, Scatter } from "recharts";
+import Plotly from "plotly.js-dist-min";
+import { useDebounce, useEffectOnce } from "usehooks-ts";
 
 export default function Layers(props) {
     const { state } = props;
-    if (!state) return null;
 
-    const { tb1, cpu4 } = state.layers;
+    const tb1 = state?.layers.TB1;
+
+    const tb1Layout = useMemo(() => ({
+        title: "TB1",
+        yaxis: {
+            range: [0.0, 1.0],
+        },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        margin: {
+            b: 30,
+            l: 30,
+            t: 30,
+            r: 20,
+            pad: 10,
+        }
+    }), []);
+
+    useEffect(() => {
+        Plotly.react(
+            "layer-tb1",
+            [
+                //{
+                //    y: tb1,
+                //    type: "bar"
+                //},
+                {
+                    y: tb1,
+                    type: "line"
+                },
+            ],
+            tb1Layout,
+            {
+                responsive: true,
+            }
+        );
+    }, [tb1, tb1Layout]);
 
     return (
-        <>
-            <ResponsiveContainer width="100%" height={250}>
-                <ComposedChart data={tb1.map((a, i)  => ({ i: i+1, TB1: a }))}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="i" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Scatter dataKey="TB1" fill="#8884d8" />
-                </ComposedChart>
-            </ResponsiveContainer>
-            <ResponsiveContainer width="100%" height={250}>
-                <ComposedChart data={cpu4.map((a, i)  => ({ i: i+1, CPU4: a }))}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="i" />
-                    <YAxis domain={[0.3, 0.7]}/>
-                    <Tooltip />
-                    <Legend />
-                    <Scatter dataKey="CPU4" fill="#8884d8" />
-                </ComposedChart>
-            </ResponsiveContainer>
-        </>
+        <div style={{height: "100%"}} id="layer-tb1"/>
     );
 }

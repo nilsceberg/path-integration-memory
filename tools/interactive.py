@@ -10,19 +10,26 @@ from websockets.exceptions import ConnectionClosedOK
 from loguru import logger
 
 #from pim.models.stone import bee_simulator, central_complex, cx_basic, cx_rate, trials
-from pim.models.stone import bee_simulator
+from pim.models.new.stone import bee_simulator
 from pim.models.new import stone
 
 # Settings
 TIME_STEP = 0.016
-MAX_SPEED = 10.0
+MAX_SPEED = 0.90
 MAX_ANGULAR_SPEED = 3.0
-TURN_SHARPNESS = 1.0
+TURN_SHARPNESS = 30.0
 
 # Globals:
 connections = {}
 auto = False
-homing = True
+homing = False
+pause = False
+input = {
+    "forward": False,
+    "backward": False,
+    "left": False,
+    "right": False,
+}
 
 async def socket_send(socket, connection_uuid, message):
     encoded = json.dumps(message)
@@ -45,6 +52,10 @@ async def perform_socket_io(connection_uuid, socket, io, args = None):
 
 
 async def handle_connection(socket):
+    global pause
+    global homing
+    global input
+
     connection_uuid = uuid.uuid4()
     connections[connection_uuid] = socket
     logger.debug("new viewer connection: {} ({})", connection_uuid, socket.remote_address)
@@ -54,7 +65,17 @@ async def handle_connection(socket):
         if message is None:
             break
 
-        logger.debug("received: {}", message)
+        logger.trace("received: {}", message)
+
+        # assume we can parse as json
+        message = json.loads(message)
+
+        if "controls" in message:
+            homing = message["controls"]["homing"]
+            pause = message["controls"]["pause"]
+
+        if "input" in message:
+            input = message["input"]
 
 def publish(message):
     for connection_uuid, socket in connections.items():
@@ -75,6 +96,10 @@ def serialize_state(
     outputs,
 ):
     return {
+        "controls": {
+            "homing": homing,
+            "pause": pause,
+        },
         "position": position.tolist(),
         "heading": heading,
         "estimated_polar": estimated_polar.tolist(),
@@ -84,6 +109,10 @@ def serialize_state(
     }
 
 async def run_simulation():
+    global pause
+    global homing
+    global input
+
     logger.info("starting simulation")
 
     # Physics state
@@ -92,13 +121,18 @@ async def run_simulation():
     angular_velocity = 0.0
 
     # CX state
-    cx = stone.CentralComplex()
+    cx = stone.rate.CXRatePontin(noise = 0.01)
+    #cx = stone.basic.CXBasic()
+    cx.setup()
+
     motor = 0
     last_estimates = []
-    estimate_scaling = 600.0
-    
-    auto = False
-    homing = True
+    estimate_scaling = 1500.0
+
+    estimated_polar = np.zeros(2)
+    estimated_position = np.zeros(2)
+    estimated_heading = np.zeros(1)
+    layers = []
 
     last_frame = datetime.datetime.now()
     while True:
@@ -108,41 +142,50 @@ async def run_simulation():
         dt = (now - last_frame).microseconds / 1e6
         last_frame = now
 
-        # simulate
-        speed = 1.0
-        if homing:
-            angular_velocity = motor
-        else:
-            angular_velocity = angular_velocity
+        if not pause:
+            # simulate
+            speed = 0.0
+            angular_velocity = 0.0
 
-        heading = bee_simulator.rotate(heading, angular_velocity)
-        direction = np.array([np.cos(heading), np.sin(heading)])
-        velocity = direction * speed * MAX_SPEED * dt
+            if homing:
+                speed = 1.0
+                angular_velocity = motor * TURN_SHARPNESS
+            else:
+                if input["left"]:
+                    angular_velocity += 1.0
+                if input["right"]:
+                    angular_velocity -= 1.0
+                if input["forward"]:
+                    speed += 1.0
+                    #velocity += np.array([0, -1])
+                if input["backward"]:
+                    speed -= 1.0
 
-        if speed > 0.0001:
-            # apply velocity
-            position += velocity
+            angular_velocity = angular_velocity * MAX_ANGULAR_SPEED
+            heading = bee_simulator.rotate(heading, angular_velocity * dt)
 
-        heading = bee_simulator.rotate(heading, angular_velocity)
+            # Velocity is represented as sin, cos in bee_simulator.py / thrust. Mistake? We flip it when inputting to update_cells
+            direction = np.array([np.cos(heading), np.sin(heading)])
+            velocity = direction * speed * MAX_SPEED
+           
+            if speed > 0.0001:
+                position += velocity * dt
+                # Is this where we went wrong? trials.py line 138, 139
 
-        # Velocity is represented as sin, cos in bee_simulator.py / thrust. Mistake? We flip it when inputting to update_cells
-        direction = np.array([np.cos(heading), np.sin(heading)])
-        velocity = direction * speed * MAX_SPEED * dt
+            h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
+            v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED
 
-        if speed > 0.00001:
-            position += velocity
-            # Is this where we went wrong? trials.py line 138, 139
+            motor = cx.update(dt, h, v)
 
-        h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
-        v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
+            estimated_polar = cx.estimate_position()
 
-        motor = cx.update(0.0, h, v)
+            last_estimates = (last_estimates + [cx.to_cartesian(estimated_polar) * estimate_scaling])[-16:]
+            estimated_position = np.mean(np.array(last_estimates), 0)
+            estimated_heading = cx.estimate_heading()
 
-        estimated_polar = cx.estimate_position()
-
-        last_estimates = (last_estimates + [cx.to_cartesian(estimated_polar) * estimate_scaling])[-16:]
-        estimated_position = np.mean(np.array(last_estimates), 0)
-        estimated_heading = cx.estimate_heading()
+            layers = dict([
+                (name, np.array(cx.network.output(name))) for name in cx.network.layers.keys()
+            ])
 
         publish(serialize_state(
             position,
@@ -150,11 +193,7 @@ async def run_simulation():
             estimated_polar,
             estimated_position,
             estimated_heading,
-            {
-                "motor": np.array([motor]),
-                "cpu4": cx.cpu4,
-                "tb1": cx.tb1,
-            }
+            layers,
         ))
 
 
