@@ -9,6 +9,7 @@ from loguru import logger
 from pygame.locals import *
 from pim.models.stone import bee_simulator
 from pim.models.new import stone
+from pim.models.new.stone.cx import tb1_model, cpu4_model
 from pim.models.new.stone.rate import CXRate, CXRatePontin
 import scipy
 
@@ -148,14 +149,16 @@ while running:
         # Is this where we went wrong? trials.py line 138, 139
 
     h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
+    v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED
     cx_update_velocity += np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
-    if cx_update_timer > cx_update_interval:
-        v = cx_update_velocity
-        motor = cx.update(0.0, h, v)
-        cx_update_timer -= cx_update_interval
-        cx_update_velocity = np.array([0.0, 0.0])
-    else:
-        cx_update_timer += dt
+    #if cx_update_timer > cx_update_interval:
+    #    v = cx_update_velocity / cx_update_interval
+    #    motor = cx.update(cx_update_interval, h, v)
+    #    cx_update_timer -= cx_update_interval
+    #    cx_update_velocity = np.array([0.0, 0.0])
+    #else:
+    #    cx_update_timer += dt
+    motor = cx.update(dt * 15.0, h, v)
 
     
 
@@ -195,8 +198,8 @@ while running:
     pygame.draw.line(surface=display, start_pos=(AREA, 0), end_pos=(AREA, AREA), color=(128, 128, 128))
 
     #print(memory)
-    graph(display, "TB1 / Delta7", lambda x: stone.tb1_model(np.array([estimated_heading]), x), (20, AREA - 30), (AREA - 40, 300), (0, 2 * np.pi), points=[(x * (2 * np.pi / 8), y) for x, y in enumerate(cx.tb1)])
-    graph(display, "CPU4 / P-FN", lambda x: stone.cpu4_model(estimated_polar, x) * 2.0, (20, AREA - 380), (AREA - 40, 380), (0, 2 * np.pi), (-0.32, 0.32), points=[(n / 16 * 2 * np.pi, y) for n, y in enumerate((cx.cpu4 - 0.5) * 2.0)])
+    graph(display, "TB1 / Delta7", lambda x: tb1_model(np.array([estimated_heading]), x), (20, AREA - 30), (AREA - 40, 300), (0, 2 * np.pi), points=[(x * (2 * np.pi / 8), y) for x, y in enumerate(cx.tb1)])
+    graph(display, "CPU4 / P-FN", lambda x: cpu4_model(estimated_polar, x) * 2.0, (20, AREA - 380), (AREA - 40, 380), (0, 2 * np.pi), (-0.32, 0.32), points=[(n / 16 * 2 * np.pi, y) for n, y in enumerate((cx.cpu4 - 0.5) * 2.0)])
 
     debug_text = font.render(f"Homing: {homing} | True distance from home: {np.linalg.norm(position):.02f} | Perceived distance from home: {np.linalg.norm(estimated_position):.02f}", False, (255, 255, 255))
     display.blit(debug_text, (8, 8))
