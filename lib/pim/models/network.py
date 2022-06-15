@@ -27,12 +27,12 @@ class Network:
     def preprocess_layers(self):
         """Prepare all layers for this time step."""
         for layer in self.layers.values():
-            layer.begin()
+            layer.begin(self)
 
     def postprocess_layers(self):
         """Post-process all layers after this time step."""
         for layer in self.layers.values():
-            layer.end()
+            layer.end(self)
 
     def step_layers(self, dt: float):
         """Step through each layer; override this if order is important."""
@@ -132,10 +132,10 @@ class Layer:
     def reset(self):
         pass
 
-    def begin(self):
+    def begin(self, network: Network):
         pass
 
-    def end(self):
+    def end(self, network: Network):
         pass
 
     def step(self, network: Network, dt: float):

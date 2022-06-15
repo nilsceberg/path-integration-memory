@@ -34,7 +34,7 @@ class PhysicsLayer(Layer):
         for key, weights in self.inputs.items():
             self.B += weights @ network.output(key)
 
-    def end(self):
+    def end(self, network: Network):
         self.reset_B()
 
     def step(self, network: Network, dt: float):
