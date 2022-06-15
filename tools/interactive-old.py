@@ -7,10 +7,12 @@ import math
 import numpy as np
 from loguru import logger
 from pygame.locals import *
-from pim.models.stone import bee_simulator
+from pim.models.new.stone import bee_simulator
 from pim.models.new import stone
 from pim.models.new.stone.cx import tb1_model, cpu4_model
 from pim.models.new.stone.rate import CXRate, CXRatePontin
+from pim.models.new.winge.cx import PhysicsCX
+from pim.models.new.winge import physics
 import scipy
 
 def world_to_screen(pos):
@@ -59,7 +61,7 @@ AREA = math.floor(1920 / 2.1)
 WINDOW_SIZE = (2 * AREA, AREA)
 
 MAX_SPEED = 10.0
-MAX_ANGULAR_SPEED = 3.0
+MAX_ANGULAR_SPEED = 40.0
 TURN_SHARPNESS = 1.0
 
 display = pygame.display.set_mode(WINDOW_SIZE)
@@ -86,10 +88,24 @@ font = pygame.font.SysFont("Monospace", 16)
 clock = pygame.time.Clock()
 
 # Central complex:
-#cx = stone.CXBasic()
+# cx = stone.CXBasic()
 # cx = CXRate()
-cx = CXRatePontin()
+# cx = CXRatePontin()
+cx = PhysicsCX(update_m=1)
 cx.setup()
+
+devices = {}
+devices['TB1']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
+devices['CPU4']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
+#devices['CPU4'].set_parameter('Cstore',7e-16) # Original is 0.07 10^-15
+devices['CPU4'].set_parameter('Rstore',2e11) # Original 2e6
+devices['CPU1a']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
+devices['CPU1b']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
+devices['Pontin']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
+
+cx.assign_devices(devices, unity_key='TB1')
+
+
 motor = 0
 last_estimates = []
 estimate_scaling = 600.0
@@ -138,7 +154,7 @@ while running:
     else:
         angular_velocity = angular_velocity * MAX_ANGULAR_SPEED * dt
 
-    heading = bee_simulator.rotate(heading, angular_velocity)
+    heading = bee_simulator.rotate(dt, heading, angular_velocity)
 
     # Velocity is represented as sin, cos in bee_simulator.py / thrust. Mistake? We flip it when inputting to update_cells
     direction = np.array([np.cos(heading), np.sin(heading)])
@@ -149,8 +165,8 @@ while running:
         # Is this where we went wrong? trials.py line 138, 139
 
     h = heading #(2.0 * np.pi - (heading + np.pi)) % (2.0 * np.pi)
-    v = np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED
-    cx_update_velocity += np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
+    v = np.array([np.cos(h), np.sin(h)]) * speed * MAX_SPEED
+    # cx_update_velocity += np.array([np.sin(h), np.cos(h)]) * speed * MAX_SPEED * dt
     #if cx_update_timer > cx_update_interval:
     #    v = cx_update_velocity / cx_update_interval
     #    motor = cx.update(cx_update_interval, h, v)
@@ -158,8 +174,9 @@ while running:
     #    cx_update_velocity = np.array([0.0, 0.0])
     #else:
     #    cx_update_timer += dt
-    motor = cx.update(dt * 15.0, h, v)
+    motor = 1e3 * cx.update(dt * 2, h, v)
 
+    print(motor)
     
 
     estimated_polar = cx.estimate_position()
