@@ -2,7 +2,7 @@ from typing import Dict
 
 from pim.models.new.stone.cx import CentralComplex
 from pim.models.new.stone.rate import gen_tb_tb_weights, noisify_weights, noisy_sigmoid
-from pim.models.network import FunctionLayer, Network
+from pim.models.network import FunctionLayer, Network, Output
 
 from .physics import Device
 from .constants import *
@@ -29,23 +29,23 @@ class PhysicsCX(CentralComplex):
                 initial = np.zeros(N_TN2),
             ),
             "TB1": PhysicsLayer(
-                inputs = {"CL1" : self.W_CL1_TB1, "TB1" : self.W_TB1_TB1},
+                inputs = [("CL1", self.W_CL1_TB1, 1), ("TB1", self.W_TB1_TB1, 0)],
                 initial = self.tb1,
             ),
             "CPU4": PhysicsLayer(
-                inputs = {"TN2" : self.W_TN2_CPU4, "TB1" : self.W_TB1_CPU4},
+                inputs = [("TN2", self.W_TN2_CPU4, 1), ("TB1", self.W_TB1_CPU4, 0)],
                 initial = self.cpu4,
             ),
             "Pontin": PhysicsLayer(
-                inputs = {"CPU4": self.W_CPU4_Pontin},
+                inputs = [("CPU4", self.W_CPU4_Pontin, 1)],
                 initial = np.zeros(N_Pontin)
             ),
             "CPU1a": PhysicsLayer(
-                inputs = {"TB1": self.W_TB1_CPU1a, "CPU4" : self.W_CPU4_CPU1a, "Pontin": self.W_Pontin_CPU1a},
+                inputs = [("TB1", self.W_TB1_CPU1a, 0), ("CPU4", self.W_CPU4_CPU1a, 1), ("Pontin", self.W_Pontin_CPU1a, 0)],
                 initial = np.zeros(N_CPU1A)
             ),
             "CPU1b": PhysicsLayer(
-                inputs = {"TB1": self.W_TB1_CPU1b, "CPU4" : self.W_CPU4_CPU1b,  "Pontin": self.W_Pontin_CPU1b},
+                inputs = [("TB1", self.W_TB1_CPU1b, 0), ("CPU4", self.W_CPU4_CPU1b, 1), ("Pontin", self.W_Pontin_CPU1b, 0)],
                 initial = np.zeros(N_CPU1B)
             ),
             "motor": FunctionLayer(
@@ -78,8 +78,8 @@ class PhysicsCX(CentralComplex):
 
 
         self.W_TB1_CPU1a = np.tile(np.diag([1.0]*N_TB1),(2,1))
-        if noisy_weights : self.W_TB1_CPU1a = noisify_weights(self.W_TB1_CPU4,weight_noise)
-        self.W_TB1_CPU4 *= self.W_TB1_CPU4[1:-1]*tb1_cpu1_m
+        if noisy_weights : self.W_TB1_CPU1a = noisify_weights(self.W_TB1_CPU1a,weight_noise)
+        self.W_TB1_CPU1a = self.W_TB1_CPU1a[1:-1]*tb1_cpu1_m
         
         self.W_TB1_CPU1b = np.zeros((2,N_TB1))
         self.W_TB1_CPU1b[0,-1] = 1.0
@@ -89,7 +89,7 @@ class PhysicsCX(CentralComplex):
         
         self.W_TN2_CPU4 = np.concatenate((np.tile(np.array([1,0]),(N_CPU4//2,1)),np.tile(np.array([0,1]),(N_CPU4//2,1)))) 
         if noisy_weights : self.W_TN2_CPU4 = noisify_weights(self.W_TN2_CPU4,weight_noise)
-        self.W_TN2_CPU4 *= mem_update_h
+        self.W_TN2_CPU4 = self.W_TN2_CPU4 * mem_update_h
         
         self.W_CPU4_CPU1a =  np.array([[0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0., 0.], #2
                                     [0., 0., 0., 0., 0., 0., 0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
@@ -151,19 +151,27 @@ class PhysicsCX(CentralComplex):
         flow = inputs
         # Add noise
         flow += np.random.normal(scale=self.noise, size=len(flow))
+        output = np.clip(flow,0,1)*self.Imax*self.inputscaling
         # scale by the standard current factor
-        return np.clip(flow,0,1)*self.Imax*self.inputscaling
+        # print(f' this is tn2 output: {output.shape}')
+        return output[0]
 
     def tl2_output(self,inputs):
         heading = inputs
+        heading = -np.asarray(heading)
         output = np.cos(heading - TL_angles)
-        return noisy_sigmoid(output, tl2_slope_tuned, tl2_bias_tuned, noise=self.noise)
+        output = noisy_sigmoid(output, tl2_slope_tuned, tl2_bias_tuned, noise=self.noise)
+        # print(f' this is tl2 output: {output.shape}')
+        return output[0]
           
     def cl1_output(self,inputs):
         tl2 = inputs
+        tl2 = np.asarray(tl2)
         sig = noisy_sigmoid(-tl2, cl1_slope_tuned, cl1_bias_tuned, noise=self.noise)
+        output = sig*self.Imax*self.inputscaling
+        # print(f' this is cl1 output: {output.shape}')
         # scale by the standard current factor
-        return sig*self.Imax*self.inputscaling
+        return output[0]
 
     def motor_output(self, inputs):
         """outputs a scalar where sign determines left or right turn."""
@@ -171,4 +179,4 @@ class PhysicsCX(CentralComplex):
 
         r_right = sum(cpu1a[:7]) + cpu1b[1]
         r_left  = sum(cpu1a[7:]) + cpu1b[0]
-        return self.update_m*(r_right-r_left)
+        return -self.update_m*(r_right-r_left)

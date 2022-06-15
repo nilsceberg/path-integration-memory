@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Tuple
 import numpy as np
 from pim.models.new.winge.physics import Device
 
@@ -8,7 +8,7 @@ from .constants import *
 Weights = np.ndarray
 
 class PhysicsLayer(Layer):
-    def __init__(self, inputs: Dict[Input,Weights], initial = np.array([0.0]), Vthres = 1.2):
+    def __init__(self, inputs: List[Tuple[Input,Weights,int]], initial = np.array([0.0]), Vthres = 1.2):
         self.inputs = inputs
         self.N = len(initial)
 
@@ -16,6 +16,7 @@ class PhysicsLayer(Layer):
         self.V = np.zeros((NV,self.N))
         self.B = np.zeros_like(self.V)
         self.dV= np.zeros_like(self.V)
+
         # I is the current through the LED
         self.I = np.zeros(self.N)
         # Power is the outputted light, in units of current
@@ -31,8 +32,16 @@ class PhysicsLayer(Layer):
         super().__init__(initial)
 
     def begin(self, network: Network):
-        for key, weights in self.inputs.items():
-            self.B += weights @ network.output(key)
+        for key, weights, channel in self.inputs:
+            if channel == 0:
+                self.B[channel] -= weights @ network.output(key)
+            else:
+                # print(self.B.shape)
+                # print(weights)
+                # print(network.output(key))
+                # print(key)
+                # print("-----------------------------")
+                self.B[channel] += weights @ network.output(key)
 
     def end(self, network: Network):
         self.reset_B()
@@ -42,6 +51,7 @@ class PhysicsLayer(Layer):
         self.update_I(dt)
 
     def output(self, network: Network) -> Output:
+        # print(f' this is layer output: {self.P}')
         return self.P * self.unity_coeff
 
     def assign_device(self, device: Device):
