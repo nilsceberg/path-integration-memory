@@ -36,16 +36,16 @@ class PhysicsCX(CentralComplex):
                 inputs = [("TN2", self.W_TN2_CPU4, 1), ("TB1", self.W_TB1_CPU4, 0)],
                 initial = self.cpu4,
             ),
-            "Pontin": PhysicsLayer(
-                inputs = [("CPU4", self.W_CPU4_Pontin, 1)],
-                initial = np.zeros(N_Pontin)
+            "Pontine": PhysicsLayer(
+                inputs = [("CPU4", self.W_CPU4_Pontine, 1)],
+                initial = np.zeros(N_Pontine)
             ),
             "CPU1a": PhysicsLayer(
-                inputs = [("TB1", self.W_TB1_CPU1a, 0), ("CPU4", self.W_CPU4_CPU1a, 1), ("Pontin", self.W_Pontin_CPU1a, 0)],
+                inputs = [("TB1", self.W_TB1_CPU1a, 0), ("CPU4", self.W_CPU4_CPU1a, 1), ("Pontine", self.W_Pontine_CPU1a, 0)],
                 initial = np.zeros(N_CPU1A)
             ),
             "CPU1b": PhysicsLayer(
-                inputs = [("TB1", self.W_TB1_CPU1b, 0), ("CPU4", self.W_CPU4_CPU1b, 1), ("Pontin", self.W_Pontin_CPU1b, 0)],
+                inputs = [("TB1", self.W_TB1_CPU1b, 0), ("CPU4", self.W_CPU4_CPU1b, 1), ("Pontine", self.W_Pontine_CPU1b, 0)],
                 initial = np.zeros(N_CPU1B)
             ),
             "motor": FunctionLayer(
@@ -115,10 +115,10 @@ class PhysicsCX(CentralComplex):
         if noisy_weights : self.W_CPU4_CPU1b = noisify_weights(self.W_CPU4_CPU1b,weight_noise)
         self.W_CPU4_CPU1a *= cpu4_cpu1_m
         
-        self.W_CPU4_Pontin = np.diag([1.0]*N_CPU4)
-        if noisy_weights : self.W_CPU4_Pontin = noisify_weights(self.W_CPU4_Pontin,weight_noise)
+        self.W_CPU4_Pontine = np.diag([1.0]*N_CPU4)
+        if noisy_weights : self.W_CPU4_Pontine = noisify_weights(self.W_CPU4_Pontine,weight_noise)
         
-        self.W_Pontin_CPU1a = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], #2
+        self.W_Pontine_CPU1a = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], #2
                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
                                     [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -133,14 +133,14 @@ class PhysicsCX(CentralComplex):
                                     [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                                     [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #15])
                                     ],dtype=float)
-        if noisy_weights : self.W_Pontin_CPU1a = noisify_weights(self.W_Pontin_CPU1a,weight_noise)
-        self.W_Pontin_CPU1a *= pon_cpu1_m
+        if noisy_weights : self.W_Pontine_CPU1a = noisify_weights(self.W_Pontine_CPU1a,weight_noise)
+        self.W_Pontine_CPU1a *= pon_cpu1_m
         
-        self.W_Pontin_CPU1b = np.zeros((2,N_Pontin))
-        self.W_Pontin_CPU1b[0,4] = 1.0
-        self.W_Pontin_CPU1b[1,11]= 1.0
-        if noisy_weights : self.W_Pontin_CPU1b = noisify_weights(self.W_Pontin_CPU1b,weight_noise)
-        self.W_Pontin_CPU1b *= pon_cpu1_m
+        self.W_Pontine_CPU1b = np.zeros((2,N_Pontine))
+        self.W_Pontine_CPU1b[0,4] = 1.0
+        self.W_Pontine_CPU1b[1,11]= 1.0
+        if noisy_weights : self.W_Pontine_CPU1b = noisify_weights(self.W_Pontine_CPU1b,weight_noise)
+        self.W_Pontine_CPU1b *= pon_cpu1_m
 
         super().__init__()
 

@@ -121,7 +121,7 @@ async def run_simulation():
     angular_velocity = 0.0
 
     # CX state
-    cx = stone.rate.CXRatePontin(noise = 0.01)
+    cx = stone.rate.CXRatePontine(noise = 0.01)
     #cx = stone.basic.CXBasic()
     cx.setup()
 

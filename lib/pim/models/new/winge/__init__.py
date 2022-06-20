@@ -62,7 +62,7 @@ class WingeExperiment(Experiment):
         cx_type = self.parameters["cx"]
 
         if cx_type == "physics":
-            cx = PhysicsCX(mem_update_h=0.25, noise=noise)
+            cx = PhysicsCX(update_m=0.001, noise=noise)
         else:
             raise RuntimeError("unknown cx type: " + cx_type)
 
@@ -77,7 +77,7 @@ class WingeExperiment(Experiment):
         devices['CPU4'].set_parameter('Rstore',2e11) # Original 2e6
         devices['CPU1a']=physics.Device(path)
         devices['CPU1b']=physics.Device(path)
-        devices['Pontin']=physics.Device(path)
+        devices['Pontine']=physics.Device(path)
 
         cx.assign_devices(devices, unity_key='TB1')
 
