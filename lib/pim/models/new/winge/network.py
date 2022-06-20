@@ -26,7 +26,6 @@ class PhysicsLayer(Layer):
         # Sequence of transistor threshold voltages, initialized to None
         self.Vt_vec = None 
 
-        # Device object hold A, for example
         self.unity_coeff = 1.0
         
         super().__init__(initial)
@@ -36,11 +35,6 @@ class PhysicsLayer(Layer):
             if channel == 0:
                 self.B[channel] -= weights @ network.output(key)
             else:
-                # print(self.B.shape)
-                # print(weights)
-                # print(network.output(key))
-                # print(key)
-                # print("-----------------------------")
                 self.B[channel] += weights @ network.output(key)
 
     def end(self, network: Network):
@@ -51,7 +45,6 @@ class PhysicsLayer(Layer):
         self.update_I(dt)
 
     def output(self, network: Network) -> Output:
-        # print(f' this is layer output: {self.P}')
         return self.P * self.unity_coeff
 
     def assign_device(self, device: Device):
