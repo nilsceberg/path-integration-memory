@@ -10,7 +10,7 @@ import matplotlib.lines as mlines
 
 nature_single = 89.0 / 25.4
 nature_double = 183.0 / 25.4
-nature_full = 247.0 / 25.4
+nature_full = 400.0 / 25.4
 
 mpl.rc('font', family='Arial', size=14)
 
@@ -38,8 +38,8 @@ def plot_route(h, v, T_outbound, T_inbound, plot_speed=False,
                plot_heading=False, memory_estimate=None, ax=None, legend=True,
                labels=True, outbound_color='purple', inbound_color='green',
                memory_color='darkorange', quiver_color='gray', title=None,
-               label_font_size=11, unit_font_size=10,
-               figsize=(nature_single, nature_single)):
+               label_font_size=16, unit_font_size=14,
+               figsize=(nature_full, nature_full)):
     """Plots a route with optional colouring by speed and arrows indicating
     direction."""
 
@@ -81,7 +81,7 @@ def plot_route(h, v, T_outbound, T_inbound, plot_speed=False,
         ax.quiver(x[1:T_outbound:interval], y[1:T_outbound:interval],
                   np.sin(h[1:T_outbound:interval]),
                   np.cos(h[1:T_outbound:interval]),
-                  pivot='tail', width=0.003, scale=12.0, headwidth=4, color=quiver_color)
+                  pivot='tail', width=0.003, scale=24.0, headwidth=4, color=quiver_color)
                   #pivot='tail', width=0.002, scale=12.0, color=quiver_color)
 
     # Inbound path
@@ -96,7 +96,7 @@ def plot_route(h, v, T_outbound, T_inbound, plot_speed=False,
         handles.append(point_estimate)
 
     # Nest label
-    ax.text(0, 0, 'N', fontsize=12, fontweight='heavy', color='k', ha='center',
+    ax.text(0, 0, 'N', fontsize=24, fontweight='heavy', color='k', ha='center',
             va='center')
     ax.set_aspect('equal')
     ax.tick_params(labelsize=unit_font_size)
