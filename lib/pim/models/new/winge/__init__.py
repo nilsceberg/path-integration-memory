@@ -62,7 +62,7 @@ class WingeExperiment(Experiment):
         cx_type = self.parameters["cx"]
 
         if cx_type == "physics":
-            cx = PhysicsCX(update_m=0.001, noise=noise)
+            cx = PhysicsCX(mem_update_h=0.001, noise=noise)
         else:
             raise RuntimeError("unknown cx type: " + cx_type)
 
@@ -74,10 +74,21 @@ class WingeExperiment(Experiment):
         devices['TB1']=physics.Device(path)
         devices['CPU4']=physics.Device(path)
         #devices['CPU4'].set_parameter('Cstore',7e-16) # Original is 0.07 10^-15
-        devices['CPU4'].set_parameter('Rstore',2e11) # Original 2e6
+        devices['CPU4'].set_parameter('Rstore',2e11) # Original 2e6, higher to get longer memory
         devices['CPU1a']=physics.Device(path)
         devices['CPU1b']=physics.Device(path)
         devices['Pontine']=physics.Device(path)
+
+        maniupulate_shift = True
+        onset_shift = 0.0
+        cpu_shift = -0.2
+
+        if maniupulate_shift:
+            Vt0 = devices['TB1'].params['Vt']
+            devices["TB1"].params['Vt'] = Vt0+onset_shift
+            devices["CPU4"].params['Vt'] = Vt0+cpu_shift
+            devices["CPU1a"].params['Vt'] = Vt0+cpu_shift
+            devices["CPU1b"].params['Vt'] = Vt0+cpu_shift
 
         cx.assign_devices(devices, unity_key='TB1')
 
@@ -122,7 +133,7 @@ class WingeExperiment(Experiment):
                     dt=dt,
                     velocity=velocity,
                     heading=heading,
-                    acceleration=0.1,
+                    acceleration=0.07,
                     drag=trials.default_drag,
                     rotation=rotation,
                 )

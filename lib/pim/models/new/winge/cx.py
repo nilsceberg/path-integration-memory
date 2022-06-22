@@ -152,16 +152,13 @@ class PhysicsCX(CentralComplex):
         # Add noise
         flow += np.random.normal(scale=self.noise, size=len(flow))
         output = np.clip(flow,0,1)*self.Imax*self.inputscaling
-        # scale by the standard current factor
-        # print(f' this is tn2 output: {output.shape}')
         return output[0]
 
     def tl2_output(self,inputs):
         heading = inputs
-        heading = -np.asarray(heading)
+        heading = np.asarray(heading)
         output = np.cos(heading - TL_angles)
         output = noisy_sigmoid(output, tl2_slope_tuned, tl2_bias_tuned, noise=self.noise)
-        # print(f' this is tl2 output: {output.shape}')
         return output[0]
           
     def cl1_output(self,inputs):
@@ -169,8 +166,7 @@ class PhysicsCX(CentralComplex):
         tl2 = np.asarray(tl2)
         sig = noisy_sigmoid(-tl2, cl1_slope_tuned, cl1_bias_tuned, noise=self.noise)
         output = sig*self.Imax*self.inputscaling
-        # print(f' this is cl1 output: {output.shape}')
-        # scale by the standard current factor
+
         return output[0]
 
     def motor_output(self, inputs):
@@ -179,4 +175,4 @@ class PhysicsCX(CentralComplex):
 
         r_right = sum(cpu1a[:7]) + cpu1b[1]
         r_left  = sum(cpu1a[7:]) + cpu1b[0]
-        return -self.update_m*(r_right-r_left)
+        return self.update_m*(r_right-r_left)
