@@ -139,6 +139,10 @@ class PhysicsNetwork(RecurrentNetwork):
         Vthres = layers[unity_key].Vthres
         self.unity_coeff, self.Imax = unity_device.inverse_gain_coefficient(eta_handle,Vthres)
 
+        # initialize voltage in memory, should probably be moved somewhere else
+        mem_init_c = 0.25
+        layers['CPU4'].V[:,:]=layers['CPU4'].Vthres*mem_init_c
+
         for layer in layers.values():
             layer.set_unity_coeff(self.unity_coeff)
 
