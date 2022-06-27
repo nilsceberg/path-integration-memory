@@ -20,7 +20,7 @@ for filename in staged_files:
         notebook = json.loads(completed_process.stdout.decode("utf-8"))
 
         # If any cell contains output, warn and set abort flag
-        if any([cell["outputs"] != [] for cell in notebook["cells"]]):
+        if any([cell["outputs"] != [] for cell in notebook["cells"] if "outputs" in cell]):
             cell_output_found = True
             print(f"\u001b[33mwarning\u001b[0m: staged notebook '{filename}' contains cell output")
 
