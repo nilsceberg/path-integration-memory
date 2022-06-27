@@ -507,22 +507,22 @@ def plot_speed(v, ax=None, label_font_size=11, unit_font_size=10):
 def plot_cxr_weights(cx, label_font_size=11, unit_font_size=10,
                      colormap='viridis'):
     sources = ['TL2', 'CL1', 'TB1', 'TB1', 'TN', 'TB1', 'TB1', 'CPU4', 'CPU4',
-               'CPU4', 'Pontin', 'Pontin']
+               'CPU4', 'Pontine', 'Pontine']
     targets = ['CL1', 'TB1', 'TB1', 'CPU4', 'CPU4', 'CPU1a', 'CPU1b', 'CPU1a',
-               'CPU1b', 'Pontin', 'CPU1a', 'CPU1b']
+               'CPU1b', 'Pontine', 'CPU1a', 'CPU1b']
     ticklabels = {'TL2': range(1, 17),
                   'CL1': range(1, 17),
                   'TB1': range(1, 9),
                   'TN': ['L', 'R'],
                   'CPU4': range(1, 17),
-                  'Pontin': range(1, 17),
+                  'Pontine': range(1, 17),
                   'CPU1a': range(2, 16),
                   'CPU1b': range(8, 10)}
 
     weights = [-np.eye(16), cx.W_CL1_TB1, -cx.W_TB1_TB1,
                -cx.W_TB1_CPU4, cx.W_TN_CPU4, -cx.W_TB1_CPU1a,
                -cx.W_TB1_CPU1b, cx.W_CPU4_CPU1a, cx.W_CPU4_CPU1b,
-               cx.W_CPU4_pontin, -cx.W_pontin_CPU1a, -cx.W_pontin_CPU1b]
+               cx.W_CPU4_pontine, -cx.W_pontine_CPU1a, -cx.W_pontine_CPU1b]
 
     fig, ax = plt.subplots(4, 3, figsize=(12, 16))
 

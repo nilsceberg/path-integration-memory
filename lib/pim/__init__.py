@@ -4,7 +4,7 @@ from typing import Union
 from .setup import Experiment
 from .models.new.stone import StoneExperiment
 from .models.stone import StoneExperiment as OldStoneExperiment
-from .models.winge import WingeExperiment
+from .models.new.winge import WingeExperiment
 
 def models(model: str, parameters: dict) -> Union[Experiment, None]:
     if model == "stone":

@@ -222,20 +222,20 @@ class CXRate(CX):
         return "rate_pholo"
 
 
-class CXRatePontin(CXRate):
+class CXRatePontine(CXRate):
 
     def __init__(self, *args, **kwargs):
 
-        super(CXRatePontin, self).__init__(**kwargs)
+        super(CXRatePontine, self).__init__(**kwargs)
         self.cpu4_mem_gain *= 0.5
         self.cpu1_bias = -1.0
         self.cpu1_slope = 7.5
 
         # Pontine cells
-        self.pontin_slope = 5.0
-        self.pontin_bias = 2.5
+        self.pontine_slope = 5.0
+        self.pontine_bias = 2.5
 
-        self.W_pontin_CPU1a = np.array([
+        self.W_pontine_CPU1a = np.array([
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], #2
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
@@ -251,11 +251,11 @@ class CXRatePontin(CXRate):
                 [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #15
             ])
-        self.W_pontin_CPU1b = np.array([
+        self.W_pontine_CPU1b = np.array([
                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #8
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], #9
             ])
-        self.W_CPU4_pontin = np.eye(N_CPU4)
+        self.W_CPU4_pontine = np.eye(N_CPU4)
 
     def cpu4_update(self, cpu4_mem, tb1, tn1, tn2):
         """Memory neurons update.
@@ -270,9 +270,9 @@ class CXRatePontin(CXRate):
 
         return np.clip(cpu4_mem, 0.0, 1.0)
 
-    def pontin_output(self, cpu4):
-        inputs = np.dot(self.W_CPU4_pontin, cpu4)
-        return noisy_sigmoid(inputs, self.pontin_slope, self.pontin_bias,
+    def pontine_output(self, cpu4):
+        inputs = np.dot(self.W_CPU4_pontine, cpu4)
+        return noisy_sigmoid(inputs, self.pontine_slope, self.pontine_bias,
                              self.noise)
 
     def cpu1a_output(self, tb1, cpu4):
@@ -280,8 +280,8 @@ class CXRatePontin(CXRate):
         heading."""
         inputs = 0.5 * np.dot(self.W_CPU4_CPU1a, cpu4)
 
-        pontin = 0.5 * self.pontin_output(cpu4)
-        inputs -= np.dot(self.W_pontin_CPU1a, pontin)
+        pontine = 0.5 * self.pontine_output(cpu4)
+        inputs -= np.dot(self.W_pontine_CPU1a, pontine)
         inputs -= np.dot(self.W_TB1_CPU1a, tb1)
 
         return noisy_sigmoid(inputs, self.cpu1_slope, self.cpu1_bias,
@@ -292,8 +292,8 @@ class CXRatePontin(CXRate):
         heading."""
         inputs = 0.5 * np.dot(self.W_CPU4_CPU1b, cpu4)
 
-        pontin = 0.5 * self.pontin_output(cpu4)
-        inputs -= np.dot(self.W_pontin_CPU1b, pontin)
+        pontine = 0.5 * self.pontine_output(cpu4)
+        inputs -= np.dot(self.W_pontine_CPU1b, pontine)
         inputs -= np.dot(self.W_TB1_CPU1b, tb1)
 
         return noisy_sigmoid(inputs, self.cpu1_slope, self.cpu1_bias,
@@ -308,7 +308,7 @@ class CXRatePontin(CXRate):
         return decode_position(cpu4_shifted, self.cpu4_mem_gain*2.0)
 
     def __str__(self):
-        return "rate_pontin"
+        return "rate_pontine"
 
 
 class CXRateAveraging(CXRate):
@@ -343,7 +343,7 @@ class CXRateHolonomic(CXRate):
         return "rate_holo"
 
 
-class CXRatePontinAveraging(CXRatePontin):
+class CXRatePontineAveraging(CXRatePontine):
     def tn1_output(self, flow):
         mean_flow = np.array([np.mean(flow), np.mean(flow)])
         output = (1.0 - mean_flow) / 2.0
@@ -358,10 +358,10 @@ class CXRatePontinAveraging(CXRatePontin):
         return np.clip(output, 0.0, 1.0)
 
     def __str__(self):
-        return "rate_pontin_av"
+        return "rate_pontine_av"
 
 
-class CXRatePontinHolonomic(CXRatePontin):
+class CXRatePontineHolonomic(CXRatePontine):
     def cpu4_update(self, cpu4_mem, tb1, tn1, tn2):
         cpu4_mem_reshaped = cpu4_mem.reshape(2, -1)
         mem_update = (0.5 - tn1.reshape(2, 1)) * (1.0 - tb1)
@@ -382,4 +382,4 @@ class CXRatePontinHolonomic(CXRatePontin):
         return decode_position(cpu4_shifted, self.cpu4_mem_gain)
 
     def __str__(self):
-        return "rate_pontin_holo"
+        return "rate_pontine_holo"

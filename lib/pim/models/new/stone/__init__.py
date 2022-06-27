@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from ....setup import Experiment, ExperimentResults
 
 from . import trials
+from . import dye
 from . import rate
 from . import basic
 from . import plotter
@@ -69,8 +70,10 @@ class StoneExperiment(Experiment):
             cx = basic.CXBasic()
         elif cx_type == "rate":
             cx = rate.CXRate(noise = noise)
-        elif cx_type == "pontin":
-            cx = rate.CXRatePontin(noise = noise)
+        elif cx_type == "pontine":
+            cx = rate.CXRatePontine(noise = noise)
+        elif cx_type == "dye":
+            cx = dye.CXDye(noise=noise)
         else:
             raise RuntimeError("unknown cx type: " + cx_type)
 

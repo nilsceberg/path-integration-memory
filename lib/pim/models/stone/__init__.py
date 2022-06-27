@@ -62,8 +62,8 @@ class StoneExperiment(Experiment):
             cx = cx_basic.CXBasic()
         elif cx_type == "rate":
             cx = cx_rate.CXRate(noise = noise)
-        elif cx_type == "pontin":
-            cx = cx_rate.CXRatePontin(noise = noise)
+        elif cx_type == "pontine":
+            cx = cx_rate.CXRatePontine(noise = noise)
         else:
             raise RuntimeError("unknown cx type: " + cx_type)
 

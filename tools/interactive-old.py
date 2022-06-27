@@ -10,7 +10,7 @@ from pygame.locals import *
 from pim.models.new.stone import bee_simulator
 from pim.models.new import stone
 from pim.models.new.stone.cx import tb1_model, cpu4_model
-from pim.models.new.stone.rate import CXRate, CXRatePontin
+from pim.models.new.stone.rate import CXRate, CXRatePontine
 from pim.models.new.winge.cx import PhysicsCX
 from pim.models.new.winge import physics
 import scipy
@@ -90,8 +90,8 @@ clock = pygame.time.Clock()
 # Central complex:
 # cx = stone.CXBasic()
 # cx = CXRate()
-# cx = CXRatePontin()
-cx = PhysicsCX(update_m=1)
+# cx = CXRatePontine()
+cx = PhysicsCX()
 cx.setup()
 
 devices = {}
@@ -101,7 +101,7 @@ devices['CPU4']=physics.Device('lib/pim/models/new/winge/parameters/device_param
 devices['CPU4'].set_parameter('Rstore',2e11) # Original 2e6
 devices['CPU1a']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
 devices['CPU1b']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
-devices['Pontin']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
+devices['Pontine']=physics.Device('lib/pim/models/new/winge/parameters/device_parameters.json')
 
 cx.assign_devices(devices, unity_key='TB1')
 
@@ -150,7 +150,7 @@ while running:
             #velocity += np.array([0, 1])
 
     if homing:
-        angular_velocity = motor * 2.0 * MAX_ANGULAR_SPEED * dt
+        angular_velocity = motor * MAX_ANGULAR_SPEED * dt
     else:
         angular_velocity = angular_velocity * MAX_ANGULAR_SPEED * dt
 
@@ -174,7 +174,7 @@ while running:
     #    cx_update_velocity = np.array([0.0, 0.0])
     #else:
     #    cx_update_timer += dt
-    motor = 1e3 * cx.update(dt * 2, h, v)
+    motor = 1e4 * cx.update(dt, h, v)
 
     print(motor)
     

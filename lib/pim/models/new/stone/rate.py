@@ -70,7 +70,7 @@ class CPU4Layer(Layer):
         return noisy_sigmoid(self.memory, self.slope,
                              self.bias, self.noise)
 
-class CPU4PontinLayer(CPU4Layer):
+class CPU4PontineLayer(CPU4Layer):
     def step(self, network: Network, dt: float):
         """Memory neurons update.
         cpu4[0-7] store optic flow peaking at left 45 deg
@@ -305,7 +305,7 @@ class CXRate(CentralComplex):
         return -output
 
 
-class CXRatePontin(CXRate):
+class CXRatePontine(CXRate):
     def build_network(self) -> Network:
         return RecurrentForwardNetwork({
             "flow": self.flow_input,
@@ -336,13 +336,13 @@ class CXRatePontin(CXRate):
                 initial = np.zeros(N_TN2),
             ),
             "CPU4": self.build_cpu4_layer(),
-            "Pontin": FunctionLayer(
+            "Pontine": FunctionLayer(
                 inputs = ["CPU4"],
-                function = self.pontin_output,
-                initial = np.zeros(N_Pontin)
+                function = self.pontine_output,
+                initial = np.zeros(N_Pontine)
             ),
             "CPU1": FunctionLayer(
-                inputs = ["TB1", "CPU4", "Pontin"],
+                inputs = ["TB1", "CPU4", "Pontine"],
                 function = self.cpu1_output,
                 initial = np.zeros(N_CPU1),
             ),
@@ -352,7 +352,7 @@ class CXRatePontin(CXRate):
             )
         })
 
-    def __init__(self, CPU4LayerClass = CPU4PontinLayer, **kwargs):
+    def __init__(self, CPU4LayerClass = CPU4PontineLayer, **kwargs):
         super().__init__(CPU4LayerClass = CPU4LayerClass, **kwargs)
         
         self.cpu4_mem_gain *= 0.5
@@ -360,10 +360,10 @@ class CXRatePontin(CXRate):
         self.cpu1_slope = 7.5
 
         # Pontine cells
-        self.pontin_slope = 5.0
-        self.pontin_bias = 2.5
+        self.pontine_slope = 5.0
+        self.pontine_bias = 2.5
 
-        self.W_pontin_CPU1a = np.array([
+        self.W_pontine_CPU1a = np.array([
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0], #2
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
@@ -379,26 +379,26 @@ class CXRatePontin(CXRate):
                 [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
                 [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #15
             ])
-        self.W_pontin_CPU1b = np.array([
+        self.W_pontine_CPU1b = np.array([
                 [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], #8
                 [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0], #9
             ])
-        self.W_CPU4_pontin = np.eye(N_CPU4)
+        self.W_CPU4_pontine = np.eye(N_CPU4)
 
-    def pontin_output(self, inputs):
+    def pontine_output(self, inputs):
         cpu4, = inputs
-        inputs = np.dot(self.W_CPU4_pontin, cpu4)
-        return noisy_sigmoid(inputs, self.pontin_slope, self.pontin_bias,
+        inputs = np.dot(self.W_CPU4_pontine, cpu4)
+        return noisy_sigmoid(inputs, self.pontine_slope, self.pontine_bias,
                              self.noise)
 
     def cpu1a_output(self, inputs):
        """The memory and direction used together to get population code for
        heading."""
-       tb1, cpu4, pontin = inputs
+       tb1, cpu4, pontine = inputs
 
        inputs = 0.5 * np.dot(self.W_CPU4_CPU1a, cpu4)
 
-       inputs -= 0.5 * np.dot(self.W_pontin_CPU1a, pontin)
+       inputs -= 0.5 * np.dot(self.W_pontine_CPU1a, pontine)
        inputs -= np.dot(self.W_TB1_CPU1a, tb1)
 
        return noisy_sigmoid(inputs, self.cpu1_slope, self.cpu1_bias,
@@ -407,18 +407,18 @@ class CXRatePontin(CXRate):
     def cpu1b_output(self, inputs):
        """The memory and direction used together to get population code for
        heading."""
-       tb1, cpu4, pontin = inputs
+       tb1, cpu4, pontine = inputs
 
        inputs = 0.5 * np.dot(self.W_CPU4_CPU1b, cpu4)
 
-       inputs -=  0.5 * np.dot(self.W_pontin_CPU1b, pontin)
+       inputs -=  0.5 * np.dot(self.W_pontine_CPU1b, pontine)
        inputs -= np.dot(self.W_TB1_CPU1b, tb1)
 
        return noisy_sigmoid(inputs, self.cpu1_slope, self.cpu1_bias,
                             self.noise)
 
     def cpu1_output(self, inputs):
-        tb1, cpu4, pontin = inputs
-        cpu1a = self.cpu1a_output([tb1, cpu4, pontin])
-        cpu1b = self.cpu1b_output([tb1, cpu4, pontin])
+        tb1, cpu4, pontine = inputs
+        cpu1a = self.cpu1a_output([tb1, cpu4, pontine])
+        cpu1b = self.cpu1b_output([tb1, cpu4, pontine])
         return np.hstack([cpu1b[-1], cpu1a, cpu1b[0]])

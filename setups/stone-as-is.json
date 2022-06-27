@@ -5,7 +5,7 @@
             "T_outbound": 1500,
             "T_inbound": 1000,
             "noise": 0.1,
-            "cx": "pontin"
+            "cx": "pontine"
         }
     }
 }
