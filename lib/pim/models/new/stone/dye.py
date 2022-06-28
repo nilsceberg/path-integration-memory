@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from pim.models.new.stone.rate import CXRatePontine
+from pim.models.new.stone.rate import CXRatePontine, noisy_sigmoid
 
 
 from ...network import Network, RecurrentForwardNetwork, Layer, FunctionLayer, Output
@@ -31,8 +31,7 @@ class DyeCPU4Layer(Layer):
 
         mem_update = np.dot(self.W_TN, tn2)
         mem_update -= np.dot(self.W_TB1, tb1)
-        mem_update = np.clip(mem_update, 0, 1)
-        return mem_update + self.background_activity
+        return noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) + self.background_activity
 
 class DyeLayer(Layer):
     def __init__(self):
