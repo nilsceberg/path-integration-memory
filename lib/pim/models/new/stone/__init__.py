@@ -66,6 +66,13 @@ class StoneExperiment(Experiment):
         noise = self.parameters["noise"]
         cx_type = self.parameters["cx"]
 
+        phi = self.parameters["phi"]
+        beta = self.parameters["beta"]
+        T_half = self.parameters["T_half"]
+        epsilon = self.parameters["epsilon"]
+        length = self.parameters["length"]
+        c_tot = self.parameters["c_tot"]
+
         if cx_type == "basic":
             cx = basic.CXBasic()
         elif cx_type == "rate":
@@ -73,7 +80,15 @@ class StoneExperiment(Experiment):
         elif cx_type == "pontine":
             cx = rate.CXRatePontine(noise = noise)
         elif cx_type == "dye":
-            cx = dye.CXDye(noise=noise)
+            cx = dye.CXDye(
+                noise=noise,
+                phi=phi,
+                beta=beta,
+                T_half=T_half,
+                epsilon=epsilon,
+                length=length,
+                c_tot = c_tot
+                )
         else:
             raise RuntimeError("unknown cx type: " + cx_type)
 
@@ -87,11 +102,6 @@ class StoneExperiment(Experiment):
         noise = self.parameters["noise"]
         cx_type = self.parameters["cx"]
         time_subdivision = self.parameters["time_subdivision"] if "time_subdivision" in self.parameters else 1
-
-        logger.info(f"generating outbound route")
-        headings, velocities = trials.generate_route(T = T_outbound, vary_speed = True)
-        #headings = np.repeat(headings, time_subdivision)
-        #headings = np.repeat(headings, time_subdivision)
 
         logger.info("initializing central complex")
 
