@@ -4,6 +4,7 @@ trash
 venv
 *.swp
 *.swo
+*.pickle
 
 # Jupyter
 .ipynb_checkpoints
