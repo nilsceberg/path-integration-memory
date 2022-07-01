@@ -54,9 +54,9 @@ class DyeLayer(Layer):
 
 class SimpleDyeLayer(DyeLayer):
     def __init__(self, gain=0.0025):
-        self.gain = gain # K
+        self.gain = gain # K (should be phi)
         self.fade_rate = -0.125 * self.gain # gamma
-        self.backreaction_rate = self.gain - self.fade_rate # B
+        self.backreaction_rate = self.gain - self.fade_rate # B (should be k)
 
         super().__init__()
 
