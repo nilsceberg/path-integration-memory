@@ -22,7 +22,7 @@ class DyeLayer(Layer):
         pass
 
     def output(self, network: Network) -> Output:
-        return network.output("CPU4") * self.weights * 5
+        return network.output("CPU4") * self.weights * 5 - network.output("CPU4") * 1
         #return np.log10(network.output("CPU4") * self.weights) + 6 #* 30000
 
 
