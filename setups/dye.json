@@ -1,0 +1,18 @@
+{
+    "experiments": {
+        "stone": {
+            "model": "stone",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "noise": 0.1,
+            "cx": "dye",
+            "record": ["CPU4", "memory"],
+            "phi": 0.0015,
+            "beta": 1.0,
+            "T_half": 135.91121187449906,
+            "epsilon": 2e5,
+            "length": 50e-4,
+            "c_tot": 0.3
+        }
+    }
+}
