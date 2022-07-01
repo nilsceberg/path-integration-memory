@@ -34,6 +34,33 @@ def noisify_weights(W, noise=0.01):
     return W + N_nonzero
 
 
+class MemorylessCPU4Layer(Layer):
+    def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise, background_activity = 1.0):
+        self.TB1 = TB1
+        self.TN1 = TN1
+        self.TN2 = TN2
+
+        self.W_TN = W_TN
+        self.W_TB1 = W_TB1
+
+        self.gain = gain
+        self.slope = slope
+        self.bias = bias
+
+        self.noise = noise
+        self.background_activity = background_activity
+
+        super().__init__(initial = np.ones(N_CPU4) * self.background_activity)
+
+    def output(self, network: Network) -> Output:
+        tb1 = network.output(self.TB1)
+        tn1 = network.output(self.TN1)
+        tn2 = network.output(self.TN2)
+
+        mem_update = np.dot(self.W_TN, tn2)
+        mem_update -= np.dot(self.W_TB1, tb1)
+        return noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) + self.background_activity
+
 class CPU4Layer(Layer):
     def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise):
         self.TB1 = TB1
@@ -334,6 +361,15 @@ class CXRatePontine(CXRate):
                 inputs = ["flow"],
                 function = self.tn2_output,
                 initial = np.zeros(N_TN2),
+            ),
+            "CPU4-no-mem": MemorylessCPU4Layer(
+                "TB1", "TN1", "TN2",
+                self.W_TN_CPU4,
+                self.W_TB1_CPU4,
+                self.cpu4_mem_gain,
+                self.cpu4_slope,
+                self.cpu4_bias,
+                self.noise,
             ),
             "CPU4": self.build_cpu4_layer(),
             "Pontine": FunctionLayer(

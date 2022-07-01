@@ -15,12 +15,13 @@ from . import plotter
 from . import bee_simulator
 
 class StoneResults(ExperimentResults):
-    def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot) -> None:
+    def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot, recordings: dict) -> None:
         super().__init__(name, parameters)
         self.headings = headings
         self.velocities = velocities
         self.log = log
         self.cpu4_snapshot = cpu4_snapshot
+        self.recordings = recordings
 
     def report(self):
         logger.info("plotting route")
@@ -40,7 +41,7 @@ class StoneResults(ExperimentResults):
         return {
             "headings": self.headings.tolist(),
             "velocities": self.headings.tolist(),
-
+            "recordings": {layer: [entry.tolist() for entry in entries] for layer, entries in self.recordings.items()}
             # annoying to serialize:
             #"log": self.log,
             #"cpu4_snapshot": self.cpu4_snapshot,
@@ -66,13 +67,6 @@ class StoneExperiment(Experiment):
         noise = self.parameters["noise"]
         cx_type = self.parameters["cx"]
 
-        phi = self.parameters["phi"]
-        beta = self.parameters["beta"]
-        T_half = self.parameters["T_half"]
-        epsilon = self.parameters["epsilon"]
-        length = self.parameters["length"]
-        c_tot = self.parameters["c_tot"]
-
         if cx_type == "basic":
             cx = basic.CXBasic()
         elif cx_type == "rate":
@@ -80,6 +74,13 @@ class StoneExperiment(Experiment):
         elif cx_type == "pontine":
             cx = rate.CXRatePontine(noise = noise)
         elif cx_type == "dye":
+            phi = self.parameters["phi"]
+            beta = self.parameters["beta"]
+            T_half = self.parameters["T_half"]
+            epsilon = self.parameters["epsilon"]
+            length = self.parameters["length"]
+            c_tot = self.parameters["c_tot"]
+
             cx = dye.CXDye(
                 noise=noise,
                 phi=phi,
@@ -103,6 +104,9 @@ class StoneExperiment(Experiment):
         cx_type = self.parameters["cx"]
         time_subdivision = self.parameters["time_subdivision"] if "time_subdivision" in self.parameters else 1
 
+        layers_to_record = self.parameters["record"] if "record" in self.parameters else []
+        recordings = {layer: [] for layer in layers_to_record}
+
         logger.info("initializing central complex")
 
         headings = np.zeros(T_outbound + T_inbound)
@@ -120,6 +124,8 @@ class StoneExperiment(Experiment):
         for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
             for ts in range(time_subdivision):
                 self.cx.update(dt, heading, velocity)
+            for layer in layers_to_record:
+                recordings[layer].append(self.cx.network.output(layer))
 
         for t in range(T_outbound, T_outbound + T_inbound):
             heading = headings[t-1]
@@ -139,6 +145,8 @@ class StoneExperiment(Experiment):
                 )
 
             headings[t], velocities[t,:] = heading, velocity
+            for layer in layers_to_record:
+                recordings[layer].append(self.cx.network.output(layer))
 
-        return StoneResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None)
+        return StoneResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None, recordings = recordings)
 

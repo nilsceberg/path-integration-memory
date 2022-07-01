@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from cgi import print_arguments
-from pim.models.new.stone.rate import CXRatePontine, noisy_sigmoid
+from pim.models.new.stone.rate import CXRatePontine, MemorylessCPU4Layer, noisy_sigmoid
 
 from ...network import Network, RecurrentForwardNetwork, Layer, FunctionLayer, Output
 from .constants import *
@@ -8,33 +8,6 @@ import numpy as np
 
 from scipy.interpolate import interp1d
 from scipy.integrate import solve_ivp
-
-class DyeCPU4Layer(Layer):
-    def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise, background_activity = 1.0):
-        self.TB1 = TB1
-        self.TN1 = TN1
-        self.TN2 = TN2
-
-        self.W_TN = W_TN
-        self.W_TB1 = W_TB1
-
-        self.gain = gain
-        self.slope = slope
-        self.bias = bias
-
-        self.noise = noise
-        self.background_activity = background_activity
-
-        super().__init__(initial = np.ones(N_CPU4) * self.background_activity)
-
-    def output(self, network: Network) -> Output:
-        tb1 = network.output(self.TB1)
-        tn1 = network.output(self.TN1)
-        tn2 = network.output(self.TN2)
-
-        mem_update = np.dot(self.W_TN, tn2)
-        mem_update -= np.dot(self.W_TB1, tb1)
-        return noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) + self.background_activity
 
 class DyeLayer(Layer):
     def __init__(self):
@@ -153,7 +126,7 @@ class CXDye(CXRatePontine):
         self.beta = beta
         self.c_tot = c_tot
 
-        super().__init__(DyeCPU4Layer, **kwargs)
+        super().__init__(MemorylessCPU4Layer, **kwargs)
 
     def build_cpu4_layer(self) -> Layer:
         return self.CPU4LayerClass(
