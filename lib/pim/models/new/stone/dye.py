@@ -22,7 +22,8 @@ class DyeLayer(Layer):
         pass
 
     def output(self, network: Network) -> Output:
-        return network.output("CPU4") * self.weights
+        return network.output("CPU4") * self.weights * 300000
+        #return np.log10(network.output("CPU4") * self.weights) + 6 #* 30000
 
 
 class SimpleDyeLayer(DyeLayer):
@@ -37,14 +38,14 @@ class SimpleDyeLayer(DyeLayer):
         self.weights += -self.backreaction_rate*dt + self.gain*inputs*dt
 
 class AdvancedDyeLayer(DyeLayer):
-    def __init__(self, epsilon, length, T_half, phi, c_tot):
+    def __init__(self, epsilon, length, T_half, phi, beta, c_tot):
         self.epsilon = epsilon
         self.length = length
         self.k = np.log(2) / T_half
         self.phi = phi
         self.c_tot = c_tot
 
-        self.last_c = np.zeros(16)
+        self.last_c = np.ones(16) * phi * beta / self.k
 
         super().__init__()
 
@@ -54,7 +55,7 @@ class AdvancedDyeLayer(DyeLayer):
             return -self.k * c + self.phi * inputs
 
 
-        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt))
+        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt*0.01))
         c = solution.y[:,-1]
         # print(c)
         self.last_c = c
@@ -98,6 +99,7 @@ class CXDye(CXRatePontine):
                 epsilon = self.epsilon, 
                 length = self.length, 
                 T_half = self.T_half, 
+                beta = self.beta,
                 phi = self.phi,
                 c_tot = self.c_tot
             ),
@@ -133,7 +135,7 @@ class CXDye(CXRatePontine):
             "TB1", "TN1", "TN2",
             self.W_TN_CPU4,
             self.W_TB1_CPU4,
-            self.cpu4_mem_gain,
+            self.cpu4_mem_gain * 10,
             self.cpu4_slope,
             self.cpu4_bias,
             self.noise,
