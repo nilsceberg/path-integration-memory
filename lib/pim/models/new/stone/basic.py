@@ -1,6 +1,6 @@
 import numpy as np
 
-from ...network import Network, Output, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, Layer
+from ....network import Network, Output, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, Layer
 from .constants import *
 from .bistable import bistable_neuron
 from .cx import CentralComplex

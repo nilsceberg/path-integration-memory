@@ -2,7 +2,7 @@ from abc import abstractmethod
 from cgi import print_arguments
 from pim.models.new.stone.rate import CXRatePontine, MemorylessCPU4Layer, noisy_sigmoid
 
-from ...network import Network, RecurrentForwardNetwork, Layer, FunctionLayer, Output
+from ....network import Network, RecurrentForwardNetwork, Layer, FunctionLayer, Output
 from .constants import *
 import numpy as np
 

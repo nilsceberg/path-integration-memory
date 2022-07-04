@@ -2,7 +2,7 @@ from typing import Dict
 
 from pim.models.new.stone.cx import CentralComplex
 from pim.models.new.stone.rate import gen_tb_tb_weights, noisify_weights, noisy_sigmoid
-from pim.models.network import FunctionLayer, Network, Output
+from pim.network import FunctionLayer, Network, Output
 
 from .physics import Device
 from .constants import *

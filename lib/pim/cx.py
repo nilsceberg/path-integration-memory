@@ -1,9 +1,10 @@
 from abc import abstractmethod
-from ....network import InputLayer, Network
 import numpy as np
 import scipy.optimize
 
-from .constants import *
+from .models import basic
+from .models.constants import *
+from .network import InputLayer, Network
 
 
 def cpu4_model(args, x):
@@ -25,6 +26,16 @@ def fit_tb1(data):
     return params
 
 
+def build_network_from_json(params) -> Network:
+    if params["type"] == "basic":
+        return basic.build_network(params["params"])
+    else:
+        raise NotImplementedError()
+
+def build_from_json(params):
+    return CentralComplex(build_network_from_json(params))
+
+
 class CentralComplex:
     def __init__(self, network: Network, tn_prefs=np.pi/4.0):
         self.tn_prefs = tn_prefs
@@ -33,18 +44,11 @@ class CentralComplex:
         self.tb1 = np.zeros(N_TB1)
         self.cpu4 = 0.5 * np.ones(N_CPU4)
 
+        self.network = network
         assert isinstance(self.network.layers["flow"], InputLayer)
         assert isinstance(self.network.layers["heading"], InputLayer)
         self.flow_input = self.network.layers["flow"]
         self.heading_input = self.network.layers["heading"]
-        self.network = network
-
-    @abstractmethod
-    def build_network(self) -> Network:
-        pass
-
-    def setup(self):
-        self.network = self.build_network()
 
     def update(self, dt, heading, velocity):
         flow = self.get_flow(heading, velocity)
@@ -56,6 +60,9 @@ class CentralComplex:
         self.tb1 = self.network.output("TB1")
         self.cpu4 = self.network.output("CPU4")
         return self.network.output("motor")
+
+    def setup(self):
+        pass
 
     def estimate_position(self):
         return fit_cpu4(self.cpu4)
@@ -83,3 +90,4 @@ class CentralComplex:
                                   1.0 / filter_steps) * self.smoothed_flow)
             flow = self.smoothed_flow
         return flow
+

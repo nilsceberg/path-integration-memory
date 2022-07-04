@@ -1,0 +1,16 @@
+{
+    "experiments": {
+        "stone": {
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "cx": {
+                "type": "basic",
+                "params": {
+                    "cpu4_mem_gain": 0.005,
+                    "noise": 0.1
+                }
+            }
+        }
+    }
+}

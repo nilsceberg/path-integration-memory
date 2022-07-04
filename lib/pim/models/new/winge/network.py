@@ -2,7 +2,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 from pim.models.new.winge.physics import Device
 
-from ...network import Input, Layer, Network, Output, RecurrentNetwork
+from ....network import Input, Layer, Network, Output, RecurrentNetwork
 from .constants import *
 
 Weights = np.ndarray

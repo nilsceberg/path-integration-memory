@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.special import expit
 
-from ...network import Network, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, Layer, Output
+from ....network import Network, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, Layer, Output
 from .constants import *
 from .cx import CentralComplex
 
