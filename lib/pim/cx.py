@@ -2,7 +2,7 @@ from abc import abstractmethod
 import numpy as np
 import scipy.optimize
 
-from .models import basic
+from .models import basic, rate
 from .models.constants import *
 from .network import InputLayer, Network
 
@@ -29,6 +29,10 @@ def fit_tb1(data):
 def build_network_from_json(params) -> Network:
     if params["type"] == "basic":
         return basic.build_network(params["params"])
+    if params["type"] == "rate":
+        return rate.build_network(params["params"])
+    if params["type"] == "pontine":
+        return rate.build_network_pontine(params["params"])
     else:
         raise NotImplementedError()
 

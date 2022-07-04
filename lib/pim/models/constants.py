@@ -1,7 +1,7 @@
 import numpy as np
 
 N_COLUMNS = 8  # Number of columns
-x = np.linspace(0, 2 * np.pi, N_COLUMNS, endpoint=False)
+#x = np.linspace(0, 2 * np.pi, N_COLUMNS, endpoint=False)
 
 # Constants
 N_TL2 = 16
@@ -14,6 +14,9 @@ N_Pontine = 16
 N_CPU1A = 14
 N_CPU1B = 2
 N_CPU1 = N_CPU1A + N_CPU1B
+
+column_angles = np.linspace(0, 2 * np.pi, N_COLUMNS, endpoint=False)
+tl2_prefs = np.tile(column_angles, 2)
 
 # TUNED PARAMETERS:
 tl2_slope_tuned = 6.8
@@ -33,3 +36,9 @@ cpu1_bias_tuned = 2.5
 
 motor_slope_tuned = 1.0
 motor_bias_tuned = 3.0
+
+cpu1_pontine_bias_tuned = -1.0
+cpu1_pontine_slope_tuned = 7.5
+
+pontine_slope_tuned = 5.0
+pontine_bias_tuned = 2.5

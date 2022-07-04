@@ -7,7 +7,7 @@ from .constants import *
 def tb1_output(inputs):
     """Sinusoidal response to solar compass."""
     theta, tb1 = inputs
-    return (1.0 + np.cos(np.pi + x + theta)) / 2.0
+    return (1.0 + np.cos(np.pi + column_angles + theta)) / 2.0
 
 def tn1_output(inputs):
     """Linearly inverse sensitive to forwards and backwards motion."""
