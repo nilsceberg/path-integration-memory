@@ -14,9 +14,11 @@ import numpy as np
 
 
 class PlasticWeightLayer(Layer):
-    def __init__(self, gain: float, fade: float = 0.125, initial_weights = np.ones(N_CPU4) * 0.5):
+    def __init__(self, noise: float, gain: float, fade: float = 0.125, sigmoid=False,initial_weights = np.ones(N_CPU4) * 0.5):
         self.gain = gain
         self.fade = fade
+        self.noise = noise
+        self.sigmoid = sigmoid
 
         self.weights = initial_weights
         self._output = np.zeros(N_CPU4)
@@ -34,7 +36,11 @@ class PlasticWeightLayer(Layer):
         return self.weights.tolist()
 
     def output(self, network: Network):
-        return self._output
+        #return self._output
+        if self.sigmoid:
+            return rate.noisy_sigmoid(self._output, cpu4_slope_tuned, cpu4_bias_tuned, self.noise)
+        else:
+            return self._output
 
 def motor_output(inputs):
     cpu4, tb1, pontine = inputs
@@ -96,7 +102,7 @@ def build_phase_shift_network(params) -> Network:
             noise = noise,
             background_activity = 0.0,
         ),
-        "memory": PlasticWeightLayer(mem_gain, mem_fade),
+        "memory": PlasticWeightLayer(noise, mem_gain, mem_fade),
         "Pontine": FunctionLayer(
             inputs = ["memory"],
             function = rate.pontine_output(noise),
@@ -163,10 +169,10 @@ def build_inverting_network(params) -> Network:
             noise = noise,
             background_activity = background_activity, # since we will lose information about the weights if this is 0
         ),
-        "weighted": PlasticWeightLayer(gain=mem_gain, fade=mem_fade),
+        "weighted": PlasticWeightLayer(noise, gain=mem_gain, fade=mem_fade),
         "memory": FunctionLayer(
             inputs = ["CPU4", "weighted"],
-            function = lambda inputs: inputs[1] / (inputs[0]),
+            function = lambda inputs: rate.noisy_sigmoid(inputs[1] / inputs[0], cpu4_slope_tuned, cpu4_bias_tuned, noise),
             initial = np.zeros(N_CPU4),
         ),
         "Pontine": FunctionLayer(
