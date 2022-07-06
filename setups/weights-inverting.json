@@ -1,0 +1,19 @@
+{
+    "experiments": {
+        "inverting": {
+            "type": "simulation",
+            "motor_factor": 2,
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "cx": {
+                "type": "weights-inverting",
+                "params": {
+                    "noise": 0.05,
+                    "background_activity": 1.0,
+                    "mem_fade": 1.125,
+                    "mem_gain": 0.0025
+                }
+            }
+        }
+    }
+}
