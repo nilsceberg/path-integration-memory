@@ -59,6 +59,8 @@ class MemorylessCPU4Layer(Layer):
 
         mem_update = np.dot(self.W_TN, tn2)
         mem_update -= np.dot(self.W_TB1, tb1)
+        #mem_update += np.random.normal(0, self.noise)
+        #return np.clip(mem_update, 0, 10)
         return noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain + self.background_activity
 
 class CPU4Layer(Layer):
