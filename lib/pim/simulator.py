@@ -21,7 +21,7 @@ default_drag = 0.15
 
 def generate_route(T=1500, mean_acc=default_acc, drag=default_drag,
                    kappa=100.0, max_acc=default_acc, min_acc=0.0,
-                   vary_speed=False):
+                   vary_speed=False, min_homing_distance=0.0):
     """Generate a random outbound route using bee_simulator physics.
     The rotations are drawn randomly from a von mises distribution and smoothed
     to ensure the agent makes more natural turns."""
@@ -30,6 +30,8 @@ def generate_route(T=1500, mean_acc=default_acc, drag=default_drag,
     vm = np.random.vonmises(mu, kappa, T)
     rotation = lfilter([1.0], [1, -0.4], vm)
     rotation[0] = 0.0
+
+    position = np.zeros(2)
 
     # Randomly sample some points within acceptable acceleration and
     # interpolate to create smoothly varying speed.
@@ -55,6 +57,11 @@ def generate_route(T=1500, mean_acc=default_acc, drag=default_drag,
             dt=1.0,
             heading=headings[t-1], velocity=velocity[t-1, :],
             rotation=rotation[t], acceleration=acceleration[t], drag=drag)
+        position += velocity[t, :]
+
+    if np.linalg.norm(position) < min_homing_distance:
+        return generate_route(T, mean_acc, drag, kappa, max_acc, min_acc, vary_speed, min_homing_distance)
+
     return headings, velocity
 
 
@@ -208,7 +215,8 @@ class SimulationExperiment(Experiment):
 
         headings[0:T_outbound], velocities[0:T_outbound, :] = generate_route(
             T = T_outbound,
-            vary_speed = True
+            vary_speed = True,
+            min_homing_distance = self.parameters.get("min_homing_distance", 0),
         )
 
         logger.info("simulating outbound path")
