@@ -106,8 +106,8 @@ class SimulationResults(ExperimentResults):
     def serialize(self):
         return {
             "headings": self.headings.tolist(),
-            "velocities": self.headings.tolist(),
-            "recordings": {layer: [entry.tolist() for entry in entries] for layer, entries in self.recordings.items()}
+            "velocities": self.velocities.tolist(),
+            "recordings": {layer: { "output": [entry.tolist() for entry in recorded["output"]], "internal": recorded["internal"] } for layer, recorded in self.recordings.items()}
             # annoying to serialize:
             #"log": self.log,
             #"cpu4_snapshot": self.cpu4_snapshot,
@@ -125,10 +125,34 @@ class SimulationResults(ExperimentResults):
         path = self.reconstruct_path()
         return min(path[self.parameters["T_outbound"]:], key = np.linalg.norm)
 
+    def closest_position_timestep(self):
+        path = self.reconstruct_path()
+        return min(range(self.parameters["T_outbound"], self.parameters["T_outbound"] + self.parameters["T_inbound"]), key = lambda i: np.linalg.norm(path[i]))
+
+    def plot_path(self, ax):
+        T_in = self.parameters["T_inbound"]
+        T_out = self.parameters["T_outbound"]
+        path = np.array(self.reconstruct_path())
+
+        ax.plot(path[:T_out,0], path[:T_out,1])
+        ax.plot(path[T_out:,0], path[T_out:,1])
+
+        closest = self.closest_position()
+        ax.plot([0, closest[0]], [0, closest[1]], "--", label=f"closest distance of {np.linalg.norm(self.closest_position()):.2f} at t={self.closest_position_timestep()}")
+
+        ax.plot(0, 0, "*")
+
+
 class SimulationExperiment(Experiment):
     def __init__(self, parameters: dict) -> None:
         super().__init__()
+
         self.parameters = parameters
+
+        self.layers_to_record = self.parameters["record"] if "record" in self.parameters else []
+        self.recordings = {layer: { "output": [], "internal": [] } for layer in self.layers_to_record}
+
+        logger.info("recording {}", self.layers_to_record)
 
         #if cx_type == "basic":
         #    cx = basic.CXBasic()
@@ -156,6 +180,17 @@ class SimulationExperiment(Experiment):
         #else:
         #    raise RuntimeError("unknown cx type: " + cx_type)
 
+    def _record(self):
+        for layer in self.layers_to_record:
+            output = self.cx.network.output(layer)
+            self.recordings[layer]["output"].append(output)
+            logger.trace("layer {} output: {}", layer, output)
+            internal = self.cx.network.layers[layer].internal()
+            if internal is not None:
+                self.recordings[layer]["internal"].append(internal)
+                logger.trace("layer {} internal: {}", layer, internal)
+
+
     def run(self, name: str) -> ExperimentResults:
         self.cx = cx.build_from_json(self.parameters["cx"])
 
@@ -163,9 +198,6 @@ class SimulationExperiment(Experiment):
         T_outbound = self.parameters["T_outbound"]
         T_inbound = self.parameters["T_inbound"]
         time_subdivision = self.parameters["time_subdivision"] if "time_subdivision" in self.parameters else 1
-
-        layers_to_record = self.parameters["record"] if "record" in self.parameters else []
-        recordings = {layer: [] for layer in layers_to_record}
 
         logger.info("initializing central complex")
 
@@ -184,8 +216,7 @@ class SimulationExperiment(Experiment):
         for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
             for ts in range(time_subdivision):
                 self.cx.update(dt, heading, velocity)
-            for layer in layers_to_record:
-                recordings[layer].append(self.cx.network.output(layer))
+            self._record()
 
         for t in range(T_outbound, T_outbound + T_inbound):
             heading = headings[t-1]
@@ -193,7 +224,7 @@ class SimulationExperiment(Experiment):
 
             for ts in range(time_subdivision):
                 motor = self.cx.update(dt, heading, velocity)
-                rotation = motor
+                rotation = motor * self.parameters.get("motor_factor", 1.0)
 
                 heading, velocity = get_next_state(
                     dt=dt,
@@ -205,9 +236,8 @@ class SimulationExperiment(Experiment):
                 )
 
             headings[t], velocities[t,:] = heading, velocity
-            for layer in layers_to_record:
-                recordings[layer].append(self.cx.network.output(layer))
+            self._record()
 
-        return SimulationResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None, recordings = recordings)
+        return SimulationResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None, recordings = self.recordings)
 
 

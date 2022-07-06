@@ -2,6 +2,7 @@ from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
 import json
+from loguru import logger
 
 
 class ExperimentResults:
@@ -30,6 +31,7 @@ class ExperimentResults:
         path.mkdir(parents = True, exist_ok = True)
         with open(filename, "w") as f:
             json.dump(output, f, indent = 2)
+        logger.info("saved experiment results as {}", filename)
 
 class Experiment:
     @abstractmethod

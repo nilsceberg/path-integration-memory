@@ -147,6 +147,10 @@ class Layer:
         """Should probably be suitable for memoization."""
         pass
 
+    def internal(self):
+        """For recording internal states in layers."""
+        return None
+
     def add_to_graph(self, name: str, graph: nx.Graph):
         graph.add_node(name)
         self.add_edges_to_graph(name, graph)

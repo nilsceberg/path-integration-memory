@@ -18,6 +18,7 @@ parser.add_argument("--threads", type=int, help="run THREADS experiments in para
 parser.add_argument("--report", action="store_true", help="generate report")
 parser.add_argument("--throw", dest="save", action="store_false", help="don't save results")
 parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5", default=[])
+parser.add_argument("--record", action="append", help="additional elements to record (for every experiment)", default=[])
 
 logger.remove()
 logger.add(
@@ -50,6 +51,12 @@ if __name__ == "__main__":
         # override setup config with command-line arguments
         if args.threads:
             setup["threads"] = args.threads
+        
+        for experiment in setup["experiments"].values():
+            if "record" in experiment:
+                experiment["record"] += args.record
+            else:
+                experiment["record"] = args.record
 
         # override arbitrary model parameters
         for override in args.override:
@@ -58,7 +65,7 @@ if __name__ == "__main__":
             deep_update(obj, path, value)
 
         setup_name = pathlib.Path(args.setup).stem
-        pim.setup.run(setup_name, setup, pim.models, save = args.save, report = args.report)
+        pim.setup.run(setup_name, setup, save = args.save, report = args.report)
 
     except FileNotFoundError:
         logger.error(f"error: setup file '{args.setup}' not found")

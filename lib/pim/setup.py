@@ -12,7 +12,7 @@ from .simulator import SimulationExperiment
 from .experiment import Experiment
 
 experiment_log_colors = ["red", "magenta", "yellow", "red", "green", "blue"]
-def run(setup_name: str, setup_config: dict, models: Callable[[str, dict], Union[Experiment, None]], report = True, save = False):
+def run(setup_name: str, setup_config: dict, report = True, save = False):
     threads = setup_config["threads"] if "threads" in setup_config else 1
     
     timestamp = datetime.now()
