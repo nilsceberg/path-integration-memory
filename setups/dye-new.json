@@ -1,0 +1,21 @@
+{
+    "experiments": {
+        "dye": {
+            "type": "simulation",
+            "motor_factor": 2,
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "cx": {
+                "type": "dye",
+                "params": {
+                    "phi": 0.015,
+                    "beta": 0.1,
+                    "T_half": 137.66577568221356,
+                    "epsilon": 2e5,
+                    "length": 10e-4,
+                    "c_tot": 0.3
+                }
+            }
+        }
+    }
+}
