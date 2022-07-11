@@ -2,7 +2,7 @@ from abc import abstractmethod
 import numpy as np
 import scipy.optimize
 
-from .models import basic, rate, weights
+from .models import basic, rate, weights, dye
 from .models.constants import *
 from .network import InputLayer, Network
 
@@ -37,6 +37,8 @@ def build_network_from_json(params) -> Network:
         return weights.build_phase_shift_network(params["params"])
     elif params["type"] == "weights-inverting":
         return weights.build_inverting_network(params["params"])
+    elif params["type"] == "dye":
+        return dye.build_dye_network(params["params"])
     else:
         raise NotImplementedError()
 
