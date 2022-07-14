@@ -26,7 +26,7 @@ class PlasticWeightLayer(Layer):
 
     def step(self, network: Network, dt: float):
         cpu4 = network.output("CPU4")
-        self._output = cpu4 * self.weights + np.random.normal(0, 0.1)
+        self._output = cpu4 * self.weights + np.random.normal(0, self.noise)
         dwdt = (cpu4 - self.fade) * self.gain
         self.weights += dwdt * dt
         self.weights = np.clip(self.weights, 0, 1)
@@ -42,18 +42,74 @@ class PlasticWeightLayer(Layer):
         else:
             return self._output
 
-def motor_output(inputs):
-    cpu4, tb1, pontine = inputs
-    #tb1 = 0.5*tb1
+def pontine_output(noise):
+    def f(inputs):
+        cpu4, = inputs
+        inputs = np.dot(rate.W_CPU4_pontine, cpu4)
+        return inputs
+        #return noisy_sigmoid(inputs, pontine_slope_tuned, pontine_bias_tuned, noise)
+    return f
 
-    left_pontine = np.roll(cpu4[:8], 4)
-    right_pontine = np.roll(cpu4[:8], 4)
+def cpu1a_pontine_output(inputs, noise):
+    """The memory and direction used together to get population code for
+    heading."""
+    tb1, cpu4, pontine = inputs
 
-    left = (np.roll(cpu4[:8], -1) - left_pontine) # type: ignore
-    right = (np.roll(cpu4[8:], 1) - right_pontine) # type: ignore
+    inputs = 0.5 * np.dot(rate.W_CPU4_CPU1a, cpu4)
 
-    motor = np.sum(np.clip(right - tb1, 0, 1000)) - np.sum(np.clip(left - tb1, 0, 1000))
-    return -motor * 5 + np.random.normal(0, 0.1) * 2
+    inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
+    inputs -= np.dot(rate.W_TB1_CPU1a, tb1)
+
+    return np.clip(inputs, 0, 1000)
+    #return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
+
+def cpu1b_pontine_output(inputs, noise):
+    """The memory and direction used together to get population code for
+    heading."""
+    tb1, cpu4, pontine = inputs
+
+    inputs = 0.5 * np.dot(rate.W_CPU4_CPU1b, cpu4)
+
+    inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
+    inputs -= np.dot(rate.W_TB1_CPU1b, tb1)
+
+    return np.clip(inputs, 0, 1000)
+    #return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
+
+def cpu1_pontine_output(noise):
+    def f(inputs):
+        tb1, cpu4, pontine = inputs
+        cpu1a = cpu1a_pontine_output([tb1, cpu4, pontine], noise)
+        cpu1b = cpu1b_pontine_output([tb1, cpu4, pontine], noise)
+        return np.hstack([cpu1b[-1], cpu1a, cpu1b[0]])
+    return f
+
+def motor_output_theoretical(noise):
+    def f(inputs):
+        cpu4, tb1, pontine = inputs
+        #tb1 = 0.5*tb1
+
+        left_pontine = np.roll(cpu4[:8], -3)
+        right_pontine = np.roll(cpu4[:8], 3)
+
+        left = 0.5 * (np.roll(cpu4[:8], -1) - right_pontine) # type: ignore
+        right = 0.5 * (np.roll(cpu4[8:], 1) - left_pontine) # type: ignore
+
+        motor = np.sum(np.clip(right - tb1, 0, 1000)) - np.sum(np.clip(left - tb1, 0, 1000))
+        return -motor + np.random.normal(0, noise)
+    return f
+
+def motor_output(noise):
+    """outputs a scalar where sign determines left or right turn."""
+    def f(inputs):
+        cpu1, = inputs
+        cpu1a = cpu1[1:-1]
+        cpu1b = np.array([cpu1[-1], cpu1[0]])
+        motor = np.dot(rate.W_CPU1a_motor, cpu1a)
+        motor += np.dot(rate.W_CPU1b_motor, cpu1b)
+        output = (motor[0] - motor[1])
+        return -output
+    return f
 
 
 def build_phase_shift_network(params) -> Network:
@@ -65,21 +121,21 @@ def build_phase_shift_network(params) -> Network:
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
         "heading": InputLayer(),
-        #"TL2": FunctionLayer(
-        #    inputs = ["heading"],
-        #    function = rate.tl2_output(noise),
-        #    initial = np.zeros(N_TL2),
-        #),
-        #"CL1": FunctionLayer(
-        #    inputs = ["TL2"],
-        #    function = rate.cl1_output(noise),
-        #    initial = np.zeros(N_CL1),
-        #),
-        "CL1": IdentityLayer("heading"),
+        "TL2": FunctionLayer(
+            inputs = ["heading"],
+            function = rate.tl2_output(noise),
+            initial = np.zeros(N_TL2),
+        ),
+        "CL1": FunctionLayer(
+            inputs = ["TL2"],
+            function = rate.cl1_output(noise),
+            initial = np.zeros(N_CL1),
+        ),
+        #"CL1": IdentityLayer("heading"),
         "TB1": FunctionLayer(
             inputs = ["CL1", "TB1"],
-            function = basic.tb1_output, #(noise),
-            #function = rate.tb1_output(noise), #(noise),
+            #function = basic.tb1_output, #(noise),
+            function = rate.tb1_output(noise), #(noise),
             initial = np.zeros(N_TB1),
         ),
         "TN1": FunctionLayer(
@@ -91,6 +147,15 @@ def build_phase_shift_network(params) -> Network:
             inputs = ["flow"],
             function = rate.tn2_output(noise),
             initial = np.zeros(N_TN2),
+        ),
+        "CPU4.old": rate.CPU4PontineLayer(
+            "TB1", "TN1", "TN2",
+            rate.W_TN_CPU4,
+            rate.W_TB1_CPU4,
+            gain = 1.0,
+            slope = cpu4_slope_tuned,
+            bias = cpu4_bias_tuned,
+            noise = noise,
         ),
         "CPU4": rate.MemorylessCPU4Layer(
             "TB1", "TN1", "TN2",
@@ -105,22 +170,22 @@ def build_phase_shift_network(params) -> Network:
         "memory": PlasticWeightLayer(noise, mem_gain, mem_fade),
         "Pontine": FunctionLayer(
             inputs = ["memory"],
-            function = rate.pontine_output(noise),
+            function = pontine_output(noise),
             initial = np.zeros(N_Pontine)
         ),
-        "motor": FunctionLayer(
+        "theory": FunctionLayer(
             inputs = ["memory", "TB1", "Pontine"],
-            function = motor_output
+            function = motor_output_theoretical(noise)
+        ),
+        "CPU1": FunctionLayer(
+            inputs = ["TB1", "memory", "Pontine"],
+            function = cpu1_pontine_output(noise),
+            initial = np.zeros(N_CPU1),
+        ),
+        "motor": FunctionLayer(
+            inputs = ["CPU1"],
+            function = motor_output(noise),
         )
-        #"CPU1": FunctionLayer(
-        #    inputs = ["TB1", "memory", "Pontine"],
-        #    function = rate.cpu1_pontine_output(noise),
-        #    initial = np.zeros(N_CPU1),
-        #),
-        #"motor": FunctionLayer(
-        #    inputs = ["CPU1"],
-        #    function = rate.motor_output(noise),
-        #)
     })
 
 
@@ -187,7 +252,7 @@ def build_inverting_network(params) -> Network:
         ),
         "motor": FunctionLayer(
             inputs = ["CPU1"],
-            function = rate.motor_output(noise),
+            function = motor_output(noise),
         )
     })
 

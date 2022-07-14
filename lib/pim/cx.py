@@ -43,13 +43,15 @@ def build_network_from_json(params) -> Network:
         raise NotImplementedError()
 
 def build_from_json(params):
-    return CentralComplex(build_network_from_json(params))
+    output_layer = params.get("output_layer", "motor")
+    return CentralComplex(build_network_from_json(params), output_layer)
 
 
 class CentralComplex:
-    def __init__(self, network: Network, tn_prefs=np.pi/4.0):
+    def __init__(self, network: Network, output_layer = "motor", tn_prefs=np.pi/4.0):
         self.tn_prefs = tn_prefs
         self.smoothed_flow = 0
+        self.output_layer = output_layer
 
         self.tb1 = np.zeros(N_TB1)
         self.cpu4 = 0.5 * np.ones(N_CPU4)
@@ -69,7 +71,7 @@ class CentralComplex:
 
         self.tb1 = self.network.output("TB1")
         self.cpu4 = self.network.output("CPU4")
-        return self.network.output("motor")
+        return self.network.output(self.output_layer)
 
     def setup(self):
         pass
