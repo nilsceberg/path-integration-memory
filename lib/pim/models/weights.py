@@ -42,6 +42,7 @@ class PlasticWeightLayer(Layer):
         else:
             return self._output
 
+# To get the shifted readout to work, we removed the sigmoids from the pontine and cpu1 outputs.
 def pontine_output(noise):
     def f(inputs):
         cpu4, = inputs
@@ -117,6 +118,7 @@ def build_phase_shift_network(params) -> Network:
     noise = params.get("noise", 0.1)
     mem_gain = params.get("mem_gain", 0.0025)
     mem_fade = params.get("mem_fade", 0.1)
+    pfn_weight_factor = params.get("pfn_weight_factor", 1)
 
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
@@ -161,7 +163,7 @@ def build_phase_shift_network(params) -> Network:
             "TB1", "TN1", "TN2",
             rate.W_TN_CPU4,
             rate.W_TB1_CPU4,
-            gain = 1.0,
+            gain = pfn_weight_factor,
             slope = cpu4_slope_tuned,
             bias = cpu4_bias_tuned,
             noise = noise,
