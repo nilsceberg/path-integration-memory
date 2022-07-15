@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import lfilter
 from scipy.interpolate import interp1d
+import random
 
 from .experiment import Experiment, ExperimentResults
 from . import cx
@@ -155,7 +156,8 @@ class SimulationExperiment(Experiment):
         super().__init__()
 
         self.parameters = parameters
-
+        
+        self.seed = parameters.get("seed", random.randint(0, 2**32-1))
         self.layers_to_record = self.parameters["record"] if "record" in self.parameters else []
         self.recordings = {layer: { "output": [], "internal": [] } for layer in self.layers_to_record}
 
@@ -199,6 +201,9 @@ class SimulationExperiment(Experiment):
 
 
     def run(self, name: str) -> ExperimentResults:
+        logger.info("seeding: {}", self.seed)
+        np.random.seed(self.seed)
+
         self.cx = cx.build_from_json(self.parameters["cx"])
 
         # extract some parameters

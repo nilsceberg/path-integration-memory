@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from multiprocessing import Pool
 from loguru import logger
+import random
 
 import sys
 import json
@@ -12,39 +13,41 @@ from .simulator import SimulationExperiment
 from .experiment import Experiment
 
 experiment_log_colors = ["red", "magenta", "yellow", "red", "green", "blue"]
-def run(setup_name: str, setup_config: dict, report = True, save = False):
-    threads = setup_config["threads"] if "threads" in setup_config else 1
+def run(setup_name: str, setup_config: dict, report = True, save = False, experiment_loggers = True):
+    threads = setup_config.get("threads", 1)
     
     timestamp = datetime.now()
     experiments = []
     color_index = 0
     for name, parameters in setup_config["experiments"].items():
-        experiment = parameters["type"]
-        if experiment == "simulation":
-            experiment = SimulationExperiment(parameters)
-        else:
-            raise RuntimeError(f"unknown experiment type: {experiment}")
+        N = parameters.get("N", 1)
+        for i in range(N):
+            experiment = parameters["type"]
+            if experiment == "simulation":
+                experiment = SimulationExperiment(parameters)
+            else:
+                raise RuntimeError(f"unknown experiment type: {experiment}")
 
-        # choose a color for logging
-        color = experiment_log_colors[color_index]
-        color_index = (color_index + 1) % len(experiment_log_colors)
+            # choose a color for logging
+            color = experiment_log_colors[color_index]
+            color_index = (color_index + 1) % len(experiment_log_colors)
 
-        experiments.append((setup_name, name, timestamp, experiment, color, report, save))
+            experiments.append((setup_name, f"{name}-{i}" if N > 1 else name, timestamp, experiment, color, report, save, experiment_loggers))
 
     logger.info(f"running {len(experiments)} experiments on {threads} threads")
-    with Pool(threads) as p:
-        p.map(run_experiment, experiments)
+    return Pool(threads).imap_unordered(run_experiment, experiments), len(experiments)
 
 
-def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool]):
-    setup_name, name, timestamp, experiment, color, report, save = task
+def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool, bool]):
+    setup_name, name, timestamp, experiment, color, report, save, experiment_loggers = task
 
-    logger.add(
-        sys.stderr,
-        colorize=True,
-        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> <" + color + ">{extra[experiment]}</" + color + ">   <level>{message}</level>",
-        filter=lambda record: "experiment" in record["extra"] and record["extra"]["experiment"] == name,
-    )
+    if experiment_loggers:
+        logger.add(
+            sys.stderr,
+            colorize=True,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> <" + color + ">{extra[experiment]}</" + color + ">   <level>{message}</level>",
+            filter=lambda record: "experiment" in record["extra"] and record["extra"]["experiment"] == name,
+        )
 
     with logger.contextualize(experiment = name):
         try:
@@ -57,6 +60,8 @@ def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool])
 
             if report:
                 results.report()
+
+            return results
         except Exception:
             logger.exception("unhandled exception")
 

@@ -7,6 +7,8 @@ import json
 import os
 import pathlib
 import sys
+import collections
+from tqdm import tqdm
 
 import pim
 import pim.setup
@@ -20,13 +22,7 @@ parser.add_argument("--throw", dest="save", action="store_false", help="don't sa
 parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5", default=[])
 parser.add_argument("--record", action="append", help="additional elements to record (for every experiment)", default=[])
 
-logger.remove()
-logger.add(
-    sys.stderr,
-    colorize=True,
-    format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>   <level>{message}</level>",
-    filter=lambda record: "experiment" not in record["extra"]
-)
+parser.add_argument("--progress", action="store_true", help="show progress bar instead of log output")
 
 def deep_update(obj: dict, path: str, value: str):
     keys = path.split(".")
@@ -41,6 +37,16 @@ def deep_update(obj: dict, path: str, value: str):
 
 if __name__ == "__main__":
     args = parser.parse_args()
+
+    logger.remove()
+
+    if not args.progress:
+        logger.add(
+            sys.stderr,
+            colorize=True,
+            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>   <level>{message}</level>",
+            filter=lambda record: "experiment" not in record["extra"]
+        )
 
     try:
         with open(args.setup, "r") as f:
@@ -65,7 +71,22 @@ if __name__ == "__main__":
             deep_update(obj, path, value)
 
         setup_name = pathlib.Path(args.setup).stem
-        pim.setup.run(setup_name, setup, save = args.save, report = args.report)
+
+        # consume iterator
+        results, total = pim.setup.run(setup_name, setup, save = args.save, report = args.report, experiment_loggers = not args.progress)
+
+        if args.progress:
+            results = tqdm(
+                results,
+                total=total,
+                colour="blue",
+            )
+
+        collections.deque(
+            results,
+            maxlen = 0,
+        )
+        
 
     except FileNotFoundError:
         logger.error(f"error: setup file '{args.setup}' not found")
