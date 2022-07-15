@@ -61,8 +61,8 @@ def cpu1a_pontine_output(inputs, noise):
     inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
     inputs -= np.dot(rate.W_TB1_CPU1a, tb1)
 
-    return np.clip(inputs, 0, 1000)
-    #return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
+    #return np.clip(inputs, 0, 1000)
+    return rate.noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
 
 def cpu1b_pontine_output(inputs, noise):
     """The memory and direction used together to get population code for
@@ -74,8 +74,8 @@ def cpu1b_pontine_output(inputs, noise):
     inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
     inputs -= np.dot(rate.W_TB1_CPU1b, tb1)
 
-    return np.clip(inputs, 0, 1000)
-    #return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
+    #return np.clip(inputs, 0, 1000)
+    return rate.noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
 
 def cpu1_pontine_output(noise):
     def f(inputs):
@@ -87,17 +87,25 @@ def cpu1_pontine_output(noise):
 
 def motor_output_theoretical(noise):
     def f(inputs):
-        cpu4, tb1, pontine = inputs
+        memory, cpu4, tb1, pontine = inputs
         #tb1 = 0.5*tb1
 
-        left_pontine = np.roll(cpu4[:8], -3)
-        right_pontine = np.roll(cpu4[:8], 3)
+        left_pontine = np.roll(memory[:8], 3)
+        right_pontine = np.roll(memory[:8], -3)
 
-        left = 0.5 * (np.roll(cpu4[:8], -1) - right_pontine) # type: ignore
-        right = 0.5 * (np.roll(cpu4[8:], 1) - left_pontine) # type: ignore
+        left = 0.5 * (np.roll(memory[:8], -2) - left_pontine) # type: ignore
+        right = 0.5 * (np.roll(memory[8:], 2) - right_pontine) # type: ignore
 
-        motor = np.sum(np.clip(right - tb1, 0, 1000)) - np.sum(np.clip(left - tb1, 0, 1000))
-        return -motor + np.random.normal(0, noise)
+        bias = 1.0
+        slope = 20
+        deltaright = rate.noisy_sigmoid(right - cpu4[8:], slope, bias, noise)
+        deltaleft = rate.noisy_sigmoid(left - cpu4[:8], slope, bias, noise)
+
+        #deltaright = np.clip(right - cpu4[8:], 0, 1000)
+        #deltaleft = np.clip(left - cpu4[:8], 0, 1000)
+
+        motor = np.sum(deltaright) - np.sum(deltaleft)
+        return motor #+ np.random.normal(0, noise)
     return f
 
 def motor_output(noise):
@@ -176,7 +184,7 @@ def build_phase_shift_network(params) -> Network:
             initial = np.zeros(N_Pontine)
         ),
         "theory": FunctionLayer(
-            inputs = ["memory", "TB1", "Pontine"],
+            inputs = ["memory", "CPU4", "TB1", "Pontine"],
             function = motor_output_theoretical(noise)
         ),
         "CPU1": FunctionLayer(
