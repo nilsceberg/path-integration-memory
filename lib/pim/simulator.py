@@ -88,6 +88,7 @@ def get_next_state(dt, heading, velocity, rotation, acceleration, drag=0.5):
     v *= (1.0 - drag)**dt
     return theta, v
 
+
 class SimulationResults(ExperimentResults):
     def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot, recordings: dict) -> None:
         super().__init__(name, parameters)
@@ -113,9 +114,10 @@ class SimulationResults(ExperimentResults):
 
     def serialize(self):
         return {
-            "headings": self.headings.tolist(),
-            "velocities": self.velocities.tolist(),
-            "recordings": {layer: { "output": [entry.tolist() for entry in recorded["output"]], "internal": recorded["internal"] } for layer, recorded in self.recordings.items()}
+            "headings": self.headings,
+            "velocities": self.velocities,
+            "recordings": self.recordings,
+            #{layer: { "output": [entry.tolist() for entry in recorded["output"]], "internal": recorded["internal"] } for layer, recorded in self.recordings.items()}
             # annoying to serialize:
             #"log": self.log,
             #"cpu4_snapshot": self.cpu4_snapshot,

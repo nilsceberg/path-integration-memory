@@ -25,6 +25,12 @@ def fit_tb1(data):
     params, _ = scipy.optimize.leastsq(error, np.array([0.1]))
     return params
 
+def to_cartesian(polar):
+    return np.array([
+        np.sin(polar[1] + np.pi),
+        np.cos(polar[1] + np.pi),
+    ]) * polar[0]
+
 
 def build_network_from_json(params) -> Network:
     if params["type"] == "basic":

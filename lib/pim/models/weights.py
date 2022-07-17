@@ -91,15 +91,20 @@ def motor_output_theoretical(noise):
         #tb1 = 0.5*tb1
 
         left_pontine = np.roll(memory[:8], 3)
-        right_pontine = np.roll(memory[:8], -3)
+        right_pontine = np.roll(memory[8:], -3)
 
-        left = 0.5 * (np.roll(memory[:8], -2) - left_pontine) # type: ignore
-        right = 0.5 * (np.roll(memory[8:], 2) - right_pontine) # type: ignore
+        left = np.clip(0.5 * (np.roll(memory[:8], -1) - left_pontine), 0, 100) # type: ignore
+        right = np.clip(0.5 * (np.roll(memory[8:], 1) - right_pontine), 0, 100) # type: ignore
 
-        bias = 1.0
-        slope = 20
-        deltaright = rate.noisy_sigmoid(right - cpu4[8:], slope, bias, noise)
-        deltaleft = rate.noisy_sigmoid(left - cpu4[:8], slope, bias, noise)
+        #pfn_left = np.clip(0.5 * (cpu4[:8] - np.roll(cpu4[:8], 4)), 0, 100)
+        #pfn_right = np.clip(0.5 * (cpu4[8:] - np.roll(cpu4[8:], -4)), 0, 100)
+        pfn_left = cpu4[:8]
+        pfn_right = cpu4[8:]
+
+        bias = 5.0
+        slope = 100
+        deltaright = rate.noisy_sigmoid(right - pfn_right, slope, bias, noise)
+        deltaleft = rate.noisy_sigmoid(left - pfn_left, slope, bias, noise)
 
         #deltaright = np.clip(right - cpu4[8:], 0, 1000)
         #deltaleft = np.clip(left - cpu4[:8], 0, 1000)

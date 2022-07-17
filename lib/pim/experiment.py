@@ -30,7 +30,7 @@ class ExperimentResults:
         path = filename.parent
         path.mkdir(parents = True, exist_ok = True)
         with open(filename, "w") as f:
-            json.dump(output, f, indent = 2)
+            json.dump(output, f, indent = 2, default=lambda x: x.tolist()) # assume that anything non-serializable is a numpy array
         logger.info("saved experiment results as {}", filename)
 
 class Experiment:
