@@ -1,8 +1,8 @@
-from abc import abstractmethod
+from .models.weights import shift as weights_shift, inverting as weights_inverting
 import numpy as np
 import scipy.optimize
 
-from .models import basic, rate, weights, dye
+from .models import basic, rate, dye
 from .models.constants import *
 from .network import InputLayer, Network
 
@@ -40,9 +40,9 @@ def build_network_from_json(params) -> Network:
     elif params["type"] == "pontine":
         return rate.build_network_pontine(params["params"])
     elif params["type"] == "weights":
-        return weights.build_phase_shift_network(params["params"])
+        return weights_shift.build_phase_shift_network(params["params"])
     elif params["type"] == "weights-inverting":
-        return weights.build_inverting_network(params["params"])
+        return weights_inverting.build_inverting_network(params["params"])
     elif params["type"] == "dye":
         return dye.build_dye_network(params["params"])
     else:

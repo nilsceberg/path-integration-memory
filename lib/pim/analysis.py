@@ -14,6 +14,6 @@ def print_analysis(results):
         closest_distances = (
             np.linalg.norm(result.closest_position()) for result in results
         )
-        mean_closest_distance = np.mean(list(tqdm(closest_distances, total=len(results))))
+        mean_closest_distance = np.mean(list(tqdm(closest_distances, total=len(results), colour="green")))
 
         print(f"Mean closest distance to home: {mean_closest_distance} steps")
