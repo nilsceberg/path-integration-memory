@@ -269,7 +269,7 @@ def cpu1a_pontine_output(inputs, noise):
     inputs -= 0.5 * np.dot(W_pontine_CPU1a, pontine)
     inputs -= np.dot(W_TB1_CPU1a, tb1)
 
-    return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
+    return noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
 
 def cpu1b_pontine_output(inputs, noise):
     """The memory and direction used together to get population code for
@@ -281,7 +281,7 @@ def cpu1b_pontine_output(inputs, noise):
     inputs -= 0.5 * np.dot(W_pontine_CPU1b, pontine)
     inputs -= np.dot(W_TB1_CPU1b, tb1)
 
-    return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
+    return noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
 
 def cpu1_pontine_output(noise):
     def f(inputs):
