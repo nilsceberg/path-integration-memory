@@ -2,7 +2,7 @@ import numpy as np
 from pim.network import InputLayer
 from scipy.special import expit
 
-from ..network import Network, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, Layer, Output
+from ..network import Network, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, WeightedSynapse, Layer, Output
 from .constants import *
 
 
@@ -218,34 +218,36 @@ def tn2_output(noise):
         return np.clip(output, 0.0, 1.0)
     return f
 
-def cpu1a_output(inputs, noise):
-    """The memory and direction used together to get population code for
-    heading."""
-    tb1, cpu4 = inputs
-    inputs = np.dot(W_CPU4_CPU1a, cpu4) * np.dot(W_TB1_CPU1a, 1.0-tb1)
-    return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
-
-def cpu1b_output(inputs, noise):
-    """The memory and direction used together to get population code for
-    heading."""
-    tb1, cpu4 = inputs
-    inputs = np.dot(W_CPU4_CPU1b, cpu4) * np.dot(W_TB1_CPU1b, 1.0-tb1)
-    return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
-
-def cpu1_output(noise):
+def cpu1a_output(noise):
     def f(inputs):
+        """The memory and direction used together to get population code for
+        heading."""
         tb1, cpu4 = inputs
-        cpu1a = cpu1a_output([tb1, cpu4], noise)
-        cpu1b = cpu1b_output([tb1, cpu4], noise)
-        return np.hstack([cpu1b[-1], cpu1a, cpu1b[0]])
+        inputs = np.dot(W_CPU4_CPU1a, cpu4) * np.dot(W_TB1_CPU1a, 1.0-tb1)
+        return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
     return f
+
+def cpu1b_output(noise):
+    def f(inputs):
+        """The memory and direction used together to get population code for
+        heading."""
+        tb1, cpu4 = inputs
+        inputs = np.dot(W_CPU4_CPU1b, cpu4) * np.dot(W_TB1_CPU1b, 1.0-tb1)
+        return noisy_sigmoid(inputs, cpu1_slope_tuned, cpu1_bias_tuned, noise)
+    return f
+
+#def cpu1_output(noise):
+#    def f(inputs):
+#        tb1, cpu4 = inputs
+#        cpu1a = cpu1a_output([tb1, cpu4], noise)
+#        cpu1b = cpu1b_output([tb1, cpu4], noise)
+#        return np.hstack([cpu1b[-1], cpu1a, cpu1b[0]])
+#    return f
 
 def motor_output(noise):
     """outputs a scalar where sign determines left or right turn."""
     def f(inputs):
-        cpu1, = inputs
-        cpu1a = cpu1[1:-1]
-        cpu1b = np.array([cpu1[-1], cpu1[0]])
+        cpu1a, cpu1b = inputs
         motor = np.dot(W_CPU1a_motor, cpu1a)
         motor += np.dot(W_CPU1b_motor, cpu1b)
         output = (motor[0] - motor[1]) * 0.25  # To kill the noise a bit!
@@ -259,36 +261,32 @@ def pontine_output(noise):
         return noisy_sigmoid(inputs, pontine_slope_tuned, pontine_bias_tuned, noise)
     return f
 
-def cpu1a_pontine_output(inputs, noise):
-    """The memory and direction used together to get population code for
-    heading."""
-    tb1, cpu4, pontine = inputs
-
-    inputs = 0.5 * np.dot(W_CPU4_CPU1a, cpu4)
-
-    inputs -= 0.5 * np.dot(W_pontine_CPU1a, pontine)
-    inputs -= np.dot(W_TB1_CPU1a, tb1)
-
-    return noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
-
-def cpu1b_pontine_output(inputs, noise):
-    """The memory and direction used together to get population code for
-    heading."""
-    tb1, cpu4, pontine = inputs
-
-    inputs = 0.5 * np.dot(W_CPU4_CPU1b, cpu4)
-
-    inputs -= 0.5 * np.dot(W_pontine_CPU1b, pontine)
-    inputs -= np.dot(W_TB1_CPU1b, tb1)
-
-    return noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
-
-def cpu1_pontine_output(noise):
+def cpu1a_pontine_output(noise):
     def f(inputs):
-        tb1, cpu4, pontine = inputs
-        cpu1a = cpu1a_pontine_output([tb1, cpu4, pontine], noise)
-        cpu1b = cpu1b_pontine_output([tb1, cpu4, pontine], noise)
-        return np.hstack([cpu1b[-1], cpu1a, cpu1b[0]])
+        """The memory and direction used together to get population code for
+        heading."""
+        reference, cpu4, pontine = inputs
+
+        inputs = 0.5 * np.dot(W_CPU4_CPU1a, cpu4)
+
+        inputs -= 0.5 * np.dot(W_pontine_CPU1a, pontine)
+        inputs -= reference
+
+        return noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
+    return f
+
+def cpu1b_pontine_output(noise):
+    def f(inputs):
+        """The memory and direction used together to get population code for
+        heading."""
+        reference, cpu4, pontine = inputs
+
+        inputs = 0.5 * np.dot(W_CPU4_CPU1b, cpu4)
+
+        inputs -= 0.5 * np.dot(W_pontine_CPU1b, pontine)
+        inputs -= reference
+
+        return noisy_sigmoid(inputs, cpu1_pontine_slope_tuned, cpu1_pontine_bias_tuned, noise)
     return f
 
 
@@ -335,13 +333,18 @@ def build_network(params, CPU4LayerClass = CPU4Layer) -> Network:
             cpu4_bias_tuned,
             noise,
         ),
-        "CPU1": FunctionLayer(
+        "CPU1a": FunctionLayer(
             inputs = ["TB1", "CPU4"],
-            function = cpu1_output(noise),
-            initial = np.zeros(N_CPU1),
+            function = cpu1a_output(noise),
+            initial = np.zeros(N_CPU1A)
+        ),
+        "CPU1b": FunctionLayer(
+            inputs = ["TB1", "CPU4"],
+            function = cpu1a_output(noise),
+            initial = np.zeros(N_CPU1A)
         ),
         "motor": FunctionLayer(
-            inputs = ["CPU1"],
+            inputs = ["CPU1a", "CPU1b"],
             function = motor_output(noise),
         )
     })
@@ -393,13 +396,18 @@ def build_network_pontine(params) -> Network:
             function = pontine_output(noise),
             initial = np.zeros(N_Pontine)
         ),
-        "CPU1": FunctionLayer(
-            inputs = ["TB1", "CPU4", "Pontine"],
-            function = cpu1_pontine_output(noise),
-            initial = np.zeros(N_CPU1),
+        "CPU1a": FunctionLayer(
+            inputs = [WeightedSynapse("TB1", W_TB1_CPU1a), "CPU4", "Pontine"],
+            function = cpu1a_pontine_output(noise),
+            initial = np.zeros(N_CPU1A),
+        ),
+        "CPU1b": FunctionLayer(
+            inputs = [WeightedSynapse("TB1", W_TB1_CPU1b), "CPU4", "Pontine"],
+            function = cpu1b_pontine_output(noise),
+            initial = np.zeros(N_CPU1B),
         ),
         "motor": FunctionLayer(
-            inputs = ["CPU1"],
+            inputs = ["CPU1a", "CPU1b"],
             function = motor_output(noise),
         )
     })
