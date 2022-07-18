@@ -212,52 +212,59 @@ class SimulationExperiment(Experiment):
         logger.info("seeding: {}", self.seed)
         np.random.seed(self.seed)
 
-        self.cx = cx.build_from_json(self.parameters["cx"])
-
         # extract some parameters
         T_outbound = self.parameters["T_outbound"]
         T_inbound = self.parameters["T_inbound"]
         time_subdivision = self.parameters["time_subdivision"] if "time_subdivision" in self.parameters else 1
 
-        logger.info("initializing central complex")
-
         headings = np.zeros(T_outbound + T_inbound)
         velocities = np.zeros((T_outbound + T_inbound, 2))
 
-        logger.info("generating outbound path")
+        if self.parameters["cx"]["type"] == "random":
+            # Useful for control
+            headings, velocities = generate_route(
+                T = T_outbound + T_inbound,
+                vary_speed = True,
+            )
+        else:
+            self.cx = cx.build_from_json(self.parameters["cx"])
 
-        headings[0:T_outbound], velocities[0:T_outbound, :] = generate_route(
-            T = T_outbound,
-            vary_speed = True,
-            min_homing_distance = self.parameters.get("min_homing_distance", 0),
-        )
+            logger.info("initializing central complex")
 
-        logger.info("simulating outbound path")
-        dt = 1.0 / time_subdivision
-        for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
-            for ts in range(time_subdivision):
-                self.cx.update(dt, heading, velocity)
-            self._record()
+            logger.info("generating outbound path")
 
-        for t in range(T_outbound, T_outbound + T_inbound):
-            heading = headings[t-1]
-            velocity = velocities[t-1,:]
+            headings[0:T_outbound], velocities[0:T_outbound, :] = generate_route(
+                T = T_outbound,
+                vary_speed = True,
+                min_homing_distance = self.parameters.get("min_homing_distance", 0),
+            )
 
-            for ts in range(time_subdivision):
-                motor = self.cx.update(dt, heading, velocity)
-                rotation = motor * self.parameters.get("motor_factor", 1.0)
+            logger.info("simulating outbound path")
+            dt = 1.0 / time_subdivision
+            for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
+                for ts in range(time_subdivision):
+                    self.cx.update(dt, heading, velocity)
+                self._record()
 
-                heading, velocity = get_next_state(
-                    dt=dt,
-                    velocity=velocity,
-                    heading=heading,
-                    acceleration=0.1,
-                    drag=default_drag,
-                    rotation=rotation,
-                )
+            for t in range(T_outbound, T_outbound + T_inbound):
+                heading = headings[t-1]
+                velocity = velocities[t-1,:]
 
-            headings[t], velocities[t,:] = heading, velocity
-            self._record()
+                for ts in range(time_subdivision):
+                    motor = self.cx.update(dt, heading, velocity)
+                    rotation = motor * self.parameters.get("motor_factor", 1.0)
+
+                    heading, velocity = get_next_state(
+                        dt=dt,
+                        velocity=velocity,
+                        heading=heading,
+                        acceleration=0.1,
+                        drag=default_drag,
+                        rotation=rotation,
+                    )
+
+                headings[t], velocities[t,:] = heading, velocity
+                self._record()
 
         return SimulationResults(name, self.parameters, headings, velocities, recordings = self.recordings)
 
