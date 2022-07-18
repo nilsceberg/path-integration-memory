@@ -89,14 +89,24 @@ def get_next_state(dt, heading, velocity, rotation, acceleration, drag=0.5):
     return theta, v
 
 
+def load_results(data):
+    return SimulationResults(
+        name = data["name"],
+        parameters = data["parameters"],
+        headings = data["results"]["headings"],
+        velocities = data["results"]["velocities"],
+        recordings = data["results"]["recordings"],
+    )
+
+
 class SimulationResults(ExperimentResults):
-    def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot, recordings: dict) -> None:
+    def __init__(self, name: str, parameters: dict, headings, velocities, recordings: dict) -> None:
         super().__init__(name, parameters)
-        self.headings = headings
-        self.velocities = velocities
-        self.log = log
-        self.cpu4_snapshot = cpu4_snapshot
-        self.recordings = recordings
+
+        # Make sure these fields are np arrays (shouldn't matter if they already are):
+        self.headings = np.array(headings)
+        self.velocities = np.array(velocities)
+        self.recordings = np.array(recordings)
 
     def report(self):
         logger.info("plotting route")
@@ -117,10 +127,6 @@ class SimulationResults(ExperimentResults):
             "headings": self.headings,
             "velocities": self.velocities,
             "recordings": self.recordings,
-            #{layer: { "output": [entry.tolist() for entry in recorded["output"]], "internal": recorded["internal"] } for layer, recorded in self.recordings.items()}
-            # annoying to serialize:
-            #"log": self.log,
-            #"cpu4_snapshot": self.cpu4_snapshot,
         }
 
     def reconstruct_path(self):
@@ -253,6 +259,6 @@ class SimulationExperiment(Experiment):
             headings[t], velocities[t,:] = heading, velocity
             self._record()
 
-        return SimulationResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None, recordings = self.recordings)
+        return SimulationResults(name, self.parameters, headings, velocities, recordings = self.recordings)
 
 
