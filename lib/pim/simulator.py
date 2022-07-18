@@ -106,7 +106,8 @@ class SimulationResults(ExperimentResults):
         # Make sure these fields are np arrays (shouldn't matter if they already are):
         self.headings = np.array(headings)
         self.velocities = np.array(velocities)
-        self.recordings = np.array(recordings)
+
+        self.recordings = recordings
 
     def report(self):
         logger.info("plotting route")
