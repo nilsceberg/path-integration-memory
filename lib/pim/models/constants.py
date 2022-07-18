@@ -37,8 +37,8 @@ cpu1_bias_tuned = 2.5
 motor_slope_tuned = 1.0
 motor_bias_tuned = 3.0
 
-cpu1_pontine_bias_tuned = -1.0
 cpu1_pontine_slope_tuned = 7.5
+cpu1_pontine_bias_tuned = -1.0
 
 pontine_slope_tuned = 5.0
 pontine_bias_tuned = 2.5

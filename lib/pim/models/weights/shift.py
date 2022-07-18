@@ -64,8 +64,6 @@ def build_phase_shift_network(params) -> Network:
     mem_fade = params.get("mem_fade", 0.1)
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
 
-    W_CPU4_CPU1 = np.eye(N_CPU4)
-
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
         "heading": InputLayer(),

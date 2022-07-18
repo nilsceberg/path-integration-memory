@@ -58,8 +58,8 @@ def cpu1a_pontine_output(noise, slope, bias):
         reference, memory, pontine = inputs
 
         inputs = 0.5 * np.dot(rate.W_CPU4_CPU1a, memory)
-
         inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
+
         inputs -= reference
 
         #return np.clip(inputs, 0, 1000)
@@ -73,8 +73,8 @@ def cpu1b_pontine_output(noise, slope, bias):
         reference, memory, pontine = inputs
 
         inputs = 0.5 * np.dot(rate.W_CPU4_CPU1b, memory)
-
         inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
+
         inputs -= reference
 
         #return np.clip(inputs, 0, 1000)
