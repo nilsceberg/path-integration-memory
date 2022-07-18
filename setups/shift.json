@@ -1,0 +1,25 @@
+{
+    "threads": 4,
+    "experiments": {
+        "shift": {
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "motor_factor": 0.1,
+            "cx": {
+                "type": "weights",
+                "output_layer": "motor",
+                "params": {
+                    "noise": 0.1,
+                    "mem_initial": 0.5,
+                    "mem_fade": 0.15,
+                    "mem_gain": 0.0023,
+                    "pfn_weight_factor": 1,
+                    "cpu1_slope": 100,
+                    "cpu1_bias": 5
+                }
+            }
+        }
+    }
+}

@@ -48,51 +48,45 @@ def pontine_output(noise):
         cpu4, = inputs
         inputs = np.dot(rate.W_CPU4_pontine, cpu4)
         return inputs
-        #return noisy_sigmoid(inputs, pontine_slope_tuned, pontine_bias_tuned, noise)
+        #return rate.noisy_sigmoid(inputs, pontine_slope_tuned, pontine_bias_tuned, noise)
     return f
 
-def cpu1a_pontine_output(inputs, noise, slope, bias):
-    """The memory and direction used together to get population code for
-    heading."""
-    reference, memory, pontine = inputs
-
-    inputs = 0.5 * np.dot(rate.W_CPU4_CPU1a, memory)
-
-    inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
-    inputs -= reference[1:-1]
-
-    #return np.clip(inputs, 0, 1000)
-    return rate.noisy_sigmoid(inputs, slope, bias, noise)
-
-def cpu1b_pontine_output(inputs, noise, slope, bias):
-    """The memory and direction used together to get population code for
-    heading."""
-    reference, memory, pontine = inputs
-
-    inputs = 0.5 * np.dot(rate.W_CPU4_CPU1b, memory)
-
-    inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
-    inputs -= reference[[-1,0]]
-
-    #return np.clip(inputs, 0, 1000)
-    return rate.noisy_sigmoid(inputs, slope, bias, noise)
-
-def cpu1_pontine_output(noise, slope, bias):
+def cpu1a_pontine_output(noise, slope, bias):
     def f(inputs):
+        """The memory and direction used together to get population code for
+        heading."""
         reference, memory, pontine = inputs
-        cpu1a = cpu1a_pontine_output([reference, memory, pontine], noise, slope, bias)
-        cpu1b = cpu1b_pontine_output([reference, memory, pontine], noise, slope, bias)
-        return np.hstack([cpu1b[-1], cpu1a, cpu1b[0]])
+
+        inputs = 0.5 * np.dot(rate.W_CPU4_CPU1a, memory)
+
+        inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
+        inputs -= reference
+
+        #return np.clip(inputs, 0, 1000)
+        return rate.noisy_sigmoid(inputs, slope, bias, noise)
+    return f
+
+def cpu1b_pontine_output(noise, slope, bias):
+    def f(inputs):
+        """The memory and direction used together to get population code for
+        heading."""
+        reference, memory, pontine = inputs
+
+        inputs = 0.5 * np.dot(rate.W_CPU4_CPU1b, memory)
+
+        inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
+        inputs -= reference
+
+        #return np.clip(inputs, 0, 1000)
+        return rate.noisy_sigmoid(inputs, slope, bias, noise)
     return f
 
 def motor_output(noise):
     """outputs a scalar where sign determines left or right turn."""
     def f(inputs):
-        cpu1, = inputs
-        cpu1a = cpu1[1:-1]
-        cpu1b = np.array([cpu1[-1], cpu1[0]])
+        cpu1a, cpu1b = inputs
         motor = np.dot(rate.W_CPU1a_motor, cpu1a)
         motor += np.dot(rate.W_CPU1b_motor, cpu1b)
         output = (motor[0] - motor[1])
-        return -output
+        return output
     return f

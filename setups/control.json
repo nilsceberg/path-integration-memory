@@ -1,0 +1,16 @@
+{
+    "threads": 4,
+    "experiments": {
+        "random": {
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "cx": {
+                "type": "random"
+            }
+        }
+    }
+}
+
+

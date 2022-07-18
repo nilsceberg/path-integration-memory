@@ -1,10 +1,32 @@
 from .. import rate
 from ...network import Network, RecurrentForwardNetwork, InputLayer, FunctionLayer, WeightedSynapse
 from ..constants import *
-from . import PlasticWeightLayer, pontine_output, motor_output, cpu1_pontine_output
+from . import PlasticWeightLayer, pontine_output, motor_output, cpu1a_pontine_output, cpu1b_pontine_output
 
 import numpy as np
 
+# Weights for using non-plastic CPU4 synapses:
+#W_CPU4_CPU1a = np.eye(N_CPU4)[1:N_CPU1A+1, :]
+#W_CPU4_CPU1b = np.array([[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+#                         [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]])
+
+W_CPU4_CPU1a = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+                         [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
+
+W_CPU4_CPU1b = np.array([[0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                         [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0]])
 
 def motor_output_theoretical(noise):
     def f(inputs):
@@ -103,17 +125,31 @@ def build_phase_shift_network(params) -> Network:
             inputs = ["memory", "CPU4", "TB1", "Pontine"],
             function = motor_output_theoretical(noise)
         ),
-        "CPU1": FunctionLayer(
-            inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1), "memory", "Pontine"],
-            function = cpu1_pontine_output(
+        "TB1_inv": FunctionLayer(
+            inputs = ["TB1"],
+            function = lambda x: 0.5 - x[0],
+            initial = np.zeros(N_TB1),
+        ),
+        "CPU1a": FunctionLayer(
+            inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1a), "memory", "Pontine"],
+            function = cpu1a_pontine_output(
                 noise,
                 params.get("cpu1_slope", cpu1_pontine_slope_tuned),
                 params.get("cpu1_bias", cpu1_pontine_bias_tuned),
             ),
-            initial = np.zeros(N_CPU1),
+            initial = np.zeros(N_CPU1A),
+        ),
+        "CPU1b": FunctionLayer(
+            inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1b), "memory", "Pontine"],
+            function = cpu1b_pontine_output(
+                noise,
+                params.get("cpu1_slope", cpu1_pontine_slope_tuned),
+                params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+            ),
+            initial = np.zeros(N_CPU1B),
         ),
         "motor": FunctionLayer(
-            inputs = ["CPU1"],
+            inputs = ["CPU1a", "CPU1b"],
             function = motor_output(noise),
         )
     })
