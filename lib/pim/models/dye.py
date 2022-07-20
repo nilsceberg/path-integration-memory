@@ -4,7 +4,7 @@ from scipy.interpolate import interp1d
 from scipy.integrate import solve_ivp
 from abc import abstractmethod
 
-from pim.models import rate
+from pim.models import rate, weights
 from ..network import Network, RecurrentForwardNetwork, InputLayer, Layer, FunctionLayer, Output
 from .constants import *
 
@@ -17,13 +17,16 @@ class DyeLayer(Layer):
     def step(self, network: Network, dt: float):
         self.update_weights(network.output("CPU4"), dt)
 
+    def internal(self):
+        return self.weights
+
     @abstractmethod
     def update_weights(self, inputs: Output, dt: float):
         pass
 
     def output(self, network: Network) -> Output:
-        return network.output("CPU4") * self.weights * 5 - network.output("CPU4") * 1
-        #return np.log10(network.output("CPU4") * self.weights) + 6 #* 30000
+        return network.output("CPU4") * self.weights * 30000 
+        # return np.log10(network.output("CPU4") * self.weights) + 6 #* 30000
 
 
 class SimpleDyeLayer(DyeLayer):
@@ -45,30 +48,32 @@ class AdvancedDyeLayer(DyeLayer):
         self.phi = phi
         self.c_tot = c_tot
 
-        print(epsilon)
-
         self.last_c = np.ones(16) * phi * beta / self.k
 
         super().__init__()
 
     def update_weights(self, inputs: Output, dt: float):
 
+        def T(c):
+            A = self.epsilon * self.length * (self.c_tot - c)
+            return 10 ** -A
+
         def dcdt(t, c):
-            return -self.k * c + self.phi * inputs
+            return -self.k * c + self.phi * inputs * (1 - T(c))
 
 
         solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt*0.01))
         c = solution.y[:,-1]
-        # print(c)
+
         self.last_c = c
 
-        A = self.epsilon * (self.c_tot - c) * self.length
+        # A = self.epsilon * (self.c_tot - c) * self.length
+        #print(A)
 
-        self.weights = 10 ** -A
+        self.weights = T(c)
+        #print(self.weights)
 
 def build_dye_network(params) -> Network:
-
-    noise = params.get("noise", 0.1)
 
     epsilon = params.get("epsilon", 1.0)
     length = params.get("length", 10e-4)
@@ -76,6 +81,9 @@ def build_dye_network(params) -> Network:
     beta = params.get("beta", 0.0)
     phi = params.get("phi", 1.0)
     c_tot = params.get("c_tot", 0.3)
+
+    noise = params.get("noise", 0.1)
+    pfn_weight_factor = params.get("pfn_weight_factor", 1)
 
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
@@ -109,7 +117,7 @@ def build_dye_network(params) -> Network:
             "TB1", "TN1", "TN2",
             rate.W_TN_CPU4,
             rate.W_TB1_CPU4,
-            gain = 0.0025 * 10,
+            gain = pfn_weight_factor,
             slope = cpu4_slope_tuned,
             bias = cpu4_bias_tuned,
             noise = noise,
@@ -125,16 +133,20 @@ def build_dye_network(params) -> Network:
         ),
         "Pontine": FunctionLayer(
             inputs = ["memory"],
-            function = rate.pontine_output(noise),
+            function = weights.pontine_output(noise),
             initial = np.zeros(N_Pontine)
+        ),
+        "theory": FunctionLayer(
+            inputs = ["memory", "CPU4", "TB1", "Pontine"],
+            function = weights.motor_output_theoretical(noise)
         ),
         "CPU1": FunctionLayer(
             inputs = ["TB1", "memory", "Pontine"],
-            function = rate.cpu1_pontine_output(noise),
+            function = weights.cpu1_pontine_output(noise),
             initial = np.zeros(N_CPU1),
         ),
         "motor": FunctionLayer(
             inputs = ["CPU1"],
-            function = rate.motor_output(noise),
+            function = weights.motor_output(noise),
         )
     })
