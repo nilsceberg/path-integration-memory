@@ -1,11 +1,13 @@
 import numpy as np
+from pim.models.weights.shift import W_CPU4_CPU1a, W_CPU4_CPU1b, motor_output_theoretical
 
 from scipy.interpolate import interp1d
 from scipy.integrate import solve_ivp
 from abc import abstractmethod
 
-from pim.models import rate, weights
-from ..network import Network, RecurrentForwardNetwork, InputLayer, Layer, FunctionLayer, Output
+from pim.models import rate
+from pim.models.weights import cpu1a_pontine_output, cpu1b_pontine_output, motor_output, pontine_output
+from ..network import Network, RecurrentForwardNetwork, InputLayer, Layer, FunctionLayer, Output, WeightedSynapse
 from .constants import *
 
 
@@ -25,8 +27,8 @@ class DyeLayer(Layer):
         pass
 
     def output(self, network: Network) -> Output:
-        return network.output("CPU4") * self.weights * 30000 
-        # return np.log10(network.output("CPU4") * self.weights) + 6 #* 30000
+        # return network.output("CPU4") * self.weights * 30000 
+        return np.log10(network.output("CPU4") * self.weights) + 6 #* 30000
 
 
 class SimpleDyeLayer(DyeLayer):
@@ -133,20 +135,33 @@ def build_dye_network(params) -> Network:
         ),
         "Pontine": FunctionLayer(
             inputs = ["memory"],
-            function = weights.pontine_output(noise),
+            function = pontine_output(noise),
             initial = np.zeros(N_Pontine)
         ),
         "theory": FunctionLayer(
             inputs = ["memory", "CPU4", "TB1", "Pontine"],
-            function = weights.motor_output_theoretical(noise)
+            function = motor_output_theoretical(noise)
         ),
-        "CPU1": FunctionLayer(
-            inputs = ["TB1", "memory", "Pontine"],
-            function = weights.cpu1_pontine_output(noise),
-            initial = np.zeros(N_CPU1),
+        "CPU1a": FunctionLayer(
+            inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1a), "memory", "Pontine"],
+            function = cpu1a_pontine_output(
+                noise,
+                params.get("cpu1_slope", cpu1_pontine_slope_tuned),
+                params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+            ),
+            initial = np.zeros(N_CPU1A),
+        ),
+        "CPU1b": FunctionLayer(
+            inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1b), "memory", "Pontine"],
+            function = cpu1b_pontine_output(
+                noise,
+                params.get("cpu1_slope", cpu1_pontine_slope_tuned),
+                params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+            ),
+            initial = np.zeros(N_CPU1B),
         ),
         "motor": FunctionLayer(
-            inputs = ["CPU1"],
-            function = weights.motor_output(noise),
+            inputs = ["CPU1a", "CPU1b"],
+            function = motor_output(noise),
         )
     })
