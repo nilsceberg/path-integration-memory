@@ -10,19 +10,9 @@ import sys
 import collections
 from tqdm import tqdm
 
-import pim
 import pim.setup
+import pim.analysis
 
-parser = argparse.ArgumentParser()
-parser.add_argument("setup")
-parser.add_argument("--threads", type=int, help="run THREADS experiments in parallel")
-
-parser.add_argument("--report", action="store_true", help="generate report")
-parser.add_argument("--throw", dest="save", action="store_false", help="don't save results")
-parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5", default=[])
-parser.add_argument("--record", action="append", help="additional elements to record (for every experiment)", default=[])
-
-parser.add_argument("--progress", action="store_true", help="show progress bar instead of log output")
 
 def deep_update(obj: dict, path: str, value: str):
     keys = path.split(".")
@@ -35,18 +25,9 @@ def deep_update(obj: dict, path: str, value: str):
         t = type(obj[key])
         obj[key] = t(value)
 
-if __name__ == "__main__":
-    args = parser.parse_args()
-
-    logger.remove()
-
-    if not args.progress:
-        logger.add(
-            sys.stderr,
-            colorize=True,
-            format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>   <level>{message}</level>",
-            filter=lambda record: "experiment" not in record["extra"]
-        )
+def run_experiment(args):
+    if args.progress:
+        logger.remove()
 
     try:
         with open(args.setup, "r") as f:
@@ -93,3 +74,43 @@ if __name__ == "__main__":
 
     except Exception:
         logger.exception("unhandled exception")
+
+
+def analyze_results(args):
+    results = pim.setup.load_results(args.results)
+    pim.analysis.print_analysis(results)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    
+    subparsers = parser.add_subparsers(help="subcommand")
+    experiment_parser = subparsers.add_parser("experiment",  aliases=["ex"], help="run experiment(s)")
+    experiment_parser.set_defaults(func=run_experiment)
+    experiment_parser.add_argument("setup")
+    experiment_parser.add_argument("--threads", type=int, help="run THREADS experiments in parallel")
+    
+    experiment_parser.add_argument("--report", action="store_true", help="generate report")
+    experiment_parser.add_argument("--throw", dest="save", action="store_false", help="don't save results")
+    experiment_parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5", default=[])
+    experiment_parser.add_argument("--record", action="append", help="additional elements to record (for every experiment)", default=[])
+    
+    experiment_parser.add_argument("--progress", action="store_true", help="show progress bar instead of log output")
+
+    analyze_parser = subparsers.add_parser("analyze", aliases=["an"], help="analyze results")
+    analyze_parser.add_argument("results", help="result file/directory")
+    analyze_parser.set_defaults(func=analyze_results)
+
+    args = parser.parse_args()
+    logger.remove()
+    logger.add(
+        sys.stderr,
+        colorize=True,
+        format="<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan>   <level>{message}</level>",
+        filter=lambda record: "experiment" not in record["extra"]
+    )
+
+    if "func" in args:
+        args.func(args)
+    else:
+        parser.print_help()

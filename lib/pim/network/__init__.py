@@ -1,9 +1,8 @@
 from abc import abstractmethod
-from typing import Callable, Dict, List, NewType, Union
+from typing import Callable, Dict, List, Union
 import numpy as np
 import networkx as nx
 
-Input = str
 Output = np.ndarray
 #Output = NewType("Output", np.ndarray)
 
@@ -124,6 +123,25 @@ class Trap():
             return value
 
 
+class Synapse:
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def resolve(self, network: Network) -> Output:
+        pass
+
+
+class WeightedSynapse(Synapse):
+    def __init__(self, upstream, weight):
+        self.upstream = upstream
+        self.weight = weight
+        super().__init__()
+
+    def resolve(self, network: Network):
+        return np.dot(self.weight, network.output(self.upstream))
+
+
 class Layer:
     def __init__(self, initial = np.array([0.0])):
         self.initial = initial
@@ -160,13 +178,13 @@ class Layer:
 
 
 class FunctionLayer(Layer):
-    def __init__(self, inputs: List[Input], function: Callable[[List[Output]], Output], initial = np.array([0.0])):
-        self.inputs = inputs
+    def __init__(self, inputs: List[Union[Synapse, str]], function: Callable[[List[Output]], Output], initial = np.array([0.0])):
+        self.inputs = [WeightedSynapse(input, 1) if isinstance(input, str) else input for input in inputs]
         self.function = function
         super().__init__(initial)
 
     def output(self, network: Network) -> Output:
-        inputs = [network.output(layer) for layer in self.inputs]
+        inputs = [input.resolve(network) for input in self.inputs]
         return self.function(inputs)
 
     def add_edges_to_graph(self, name: str, graph: nx.Graph):

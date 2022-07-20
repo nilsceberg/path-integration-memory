@@ -1,0 +1,18 @@
+{
+    "threads": 4,
+    "experiments": {
+        "pontine": {
+            "N": 10,
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "cx": {
+                "type": "pontine",
+                "params": {
+                    "noise": 0.1
+                }
+            }
+        }
+    }
+}
+

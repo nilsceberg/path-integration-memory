@@ -89,13 +89,24 @@ def get_next_state(dt, heading, velocity, rotation, acceleration, drag=0.5):
     return theta, v
 
 
+def load_results(data):
+    return SimulationResults(
+        name = data["name"],
+        parameters = data["parameters"],
+        headings = data["results"]["headings"],
+        velocities = data["results"]["velocities"],
+        recordings = data["results"]["recordings"],
+    )
+
+
 class SimulationResults(ExperimentResults):
-    def __init__(self, name: str, parameters: dict, headings, velocities, log, cpu4_snapshot, recordings: dict) -> None:
+    def __init__(self, name: str, parameters: dict, headings, velocities, recordings: dict) -> None:
         super().__init__(name, parameters)
-        self.headings = headings
-        self.velocities = velocities
-        self.log = log
-        self.cpu4_snapshot = cpu4_snapshot
+
+        # Make sure these fields are np arrays (shouldn't matter if they already are):
+        self.headings = np.array(headings)
+        self.velocities = np.array(velocities)
+
         self.recordings = recordings
 
     def report(self):
@@ -117,10 +128,6 @@ class SimulationResults(ExperimentResults):
             "headings": self.headings,
             "velocities": self.velocities,
             "recordings": self.recordings,
-            #{layer: { "output": [entry.tolist() for entry in recorded["output"]], "internal": recorded["internal"] } for layer, recorded in self.recordings.items()}
-            # annoying to serialize:
-            #"log": self.log,
-            #"cpu4_snapshot": self.cpu4_snapshot,
         }
 
     def reconstruct_path(self):
@@ -206,53 +213,60 @@ class SimulationExperiment(Experiment):
         logger.info("seeding: {}", self.seed)
         np.random.seed(self.seed)
 
-        self.cx = cx.build_from_json(self.parameters["cx"])
-
         # extract some parameters
         T_outbound = self.parameters["T_outbound"]
         T_inbound = self.parameters["T_inbound"]
         time_subdivision = self.parameters["time_subdivision"] if "time_subdivision" in self.parameters else 1
 
-        logger.info("initializing central complex")
-
         headings = np.zeros(T_outbound + T_inbound)
         velocities = np.zeros((T_outbound + T_inbound, 2))
 
-        logger.info("generating outbound path")
+        if self.parameters["cx"]["type"] == "random":
+            # Useful for control
+            headings, velocities = generate_route(
+                T = T_outbound + T_inbound,
+                vary_speed = True,
+            )
+        else:
+            self.cx = cx.build_from_json(self.parameters["cx"])
 
-        headings[0:T_outbound], velocities[0:T_outbound, :] = generate_route(
-            T = T_outbound,
-            vary_speed = True,
-            min_homing_distance = self.parameters.get("min_homing_distance", 0),
-        )
+            logger.info("initializing central complex")
 
-        logger.info("simulating outbound path")
-        dt = 1.0 / time_subdivision
-        for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
-            for ts in range(time_subdivision):
-                self.cx.update(dt, heading, velocity)
-            self._record()
+            logger.info("generating outbound path")
 
-        for t in range(T_outbound, T_outbound + T_inbound):
-            heading = headings[t-1]
-            velocity = velocities[t-1,:]
+            headings[0:T_outbound], velocities[0:T_outbound, :] = generate_route(
+                T = T_outbound,
+                vary_speed = True,
+                min_homing_distance = self.parameters.get("min_homing_distance", 0),
+            )
 
-            for ts in range(time_subdivision):
-                motor = self.cx.update(dt, heading, velocity)
-                rotation = motor * self.parameters.get("motor_factor", 1.0)
+            logger.info("simulating outbound path")
+            dt = 1.0 / time_subdivision
+            for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
+                for ts in range(time_subdivision):
+                    self.cx.update(dt, heading, velocity)
+                self._record()
 
-                heading, velocity = get_next_state(
-                    dt=dt,
-                    velocity=velocity,
-                    heading=heading,
-                    acceleration=0.1,
-                    drag=default_drag,
-                    rotation=rotation,
-                )
+            for t in range(T_outbound, T_outbound + T_inbound):
+                heading = headings[t-1]
+                velocity = velocities[t-1,:]
 
-            headings[t], velocities[t,:] = heading, velocity
-            self._record()
+                for ts in range(time_subdivision):
+                    motor = self.cx.update(dt, heading, velocity)
+                    rotation = motor * self.parameters.get("motor_factor", 1.0)
 
-        return SimulationResults(name, self.parameters, headings, velocities, log = None, cpu4_snapshot = None, recordings = self.recordings)
+                    heading, velocity = get_next_state(
+                        dt=dt,
+                        velocity=velocity,
+                        heading=heading,
+                        acceleration=0.1,
+                        drag=default_drag,
+                        rotation=rotation,
+                    )
+
+                headings[t], velocities[t,:] = heading, velocity
+                self._record()
+
+        return SimulationResults(name, self.parameters, headings, velocities, recordings = self.recordings)
 
 

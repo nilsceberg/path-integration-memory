@@ -9,7 +9,7 @@ import random
 import sys
 import json
 
-from .simulator import SimulationExperiment
+from . import simulator
 from .experiment import Experiment
 
 experiment_log_colors = ["red", "magenta", "yellow", "red", "green", "blue"]
@@ -24,7 +24,7 @@ def run(setup_name: str, setup_config: dict, report = True, save = False, experi
         for i in range(N):
             experiment = parameters["type"]
             if experiment == "simulation":
-                experiment = SimulationExperiment(parameters)
+                experiment = simulator.SimulationExperiment(parameters)
             else:
                 raise RuntimeError(f"unknown experiment type: {experiment}")
 
@@ -64,4 +64,27 @@ def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool, 
             return results
         except Exception:
             logger.exception("unhandled exception")
+
+
+
+def load_results(filename):
+    path = Path(filename)
+
+    # If a directory is specified, load all results:
+    if path.is_dir():
+        paths = list(path.iterdir())
+    else:
+        paths = [path]
+
+    results = []
+    for path in paths:
+        with path.open() as f:
+            data = json.load(f)
+            experiment_type = data["parameters"]["type"]
+            if experiment_type == "simulation":
+                results.append(simulator.load_results(data))
+            else:
+                raise RuntimeError(f"unknown experiment type: {experiment_type}")
+
+    return results
 
