@@ -27,9 +27,8 @@ class DyeLayer(Layer):
         pass
 
     def output(self, network: Network) -> Output:
-        # return network.output("CPU4") * self.weights * 30000 
-        return np.log10(network.output("CPU4") * self.weights) + 6 #* 30000
-
+        # return network.output("CPU4") * self.weights
+        return np.log10(network.output("CPU4") * self.weights)#* 30000
 
 class SimpleDyeLayer(DyeLayer):
     def __init__(self, gain=0.0025):
@@ -50,9 +49,12 @@ class AdvancedDyeLayer(DyeLayer):
         self.phi = phi
         self.c_tot = c_tot
 
-        self.last_c = np.ones(16) * phi * beta / self.k
+        self.last_c = np.ones(16) * 0#* phi * beta / self.k
 
         super().__init__()
+
+    def internal(self):
+            return self.last_c
 
     def update_weights(self, inputs: Output, dt: float):
 
@@ -61,19 +63,18 @@ class AdvancedDyeLayer(DyeLayer):
             return 10 ** -A
 
         def dcdt(t, c):
-            return -self.k * c + self.phi * inputs * (1 - T(c))
+            return (-self.k * c + self.phi * inputs * (1 - T(c)))
 
-
-        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt*0.01))
+        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt))
         c = solution.y[:,-1]
 
         self.last_c = c
 
-        # A = self.epsilon * (self.c_tot - c) * self.length
-        #print(A)
+        # if ((c > self.c_tot).any()):
+        #     print(c)
 
         self.weights = T(c)
-        #print(self.weights)
+        # print(self.weights)
 
 def build_dye_network(params) -> Network:
 
@@ -143,7 +144,7 @@ def build_dye_network(params) -> Network:
             function = motor_output_theoretical(noise)
         ),
         "CPU1a": FunctionLayer(
-            inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1a), "memory", "Pontine"],
+            inputs = [WeightedSynapse("TB1", rate.W_TB1_CPU1a), "memory", "Pontine"],
             function = cpu1a_pontine_output(
                 noise,
                 params.get("cpu1_slope", cpu1_pontine_slope_tuned),
@@ -152,7 +153,7 @@ def build_dye_network(params) -> Network:
             initial = np.zeros(N_CPU1A),
         ),
         "CPU1b": FunctionLayer(
-            inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1b), "memory", "Pontine"],
+            inputs = [WeightedSynapse("TB1", rate.W_TB1_CPU1b), "memory", "Pontine"],
             function = cpu1b_pontine_output(
                 noise,
                 params.get("cpu1_slope", cpu1_pontine_slope_tuned),
