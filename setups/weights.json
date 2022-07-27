@@ -1,0 +1,17 @@
+{
+    "experiments": {
+        "stone": {
+            "N": 3,
+            "type": "simulation",
+            "T_outbound": 3000,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "cx": {
+                "type": "weights",
+                "params": {
+                    "noise": 0.1
+                }
+            }
+        }
+    }
+}

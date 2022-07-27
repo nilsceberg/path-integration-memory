@@ -4,6 +4,7 @@ from ...network import IdentityLayer, Network, RecurrentForwardNetwork, Layer, I
 from ..constants import *
 
 import numpy as np
+from scipy.special import expit
 
 
 #def cpu4_output(noise):
@@ -14,7 +15,7 @@ import numpy as np
 
 
 class PlasticWeightLayer(Layer):
-    def __init__(self, noise: float, gain: float, fade: float = 0.125, sigmoid=False,initial_weights = np.ones(N_CPU4) * 0.5):
+    def __init__(self, noise: float, gain: float, fade: float = 0.125, sigmoid=False, initial_weights = np.ones(N_CPU4) * 0.5):
         self.gain = gain
         self.fade = fade
         self.noise = noise
@@ -26,7 +27,7 @@ class PlasticWeightLayer(Layer):
 
     def step(self, network: Network, dt: float):
         cpu4 = network.output("CPU4")
-        self._output = cpu4 * self.weights + np.random.normal(0, self.noise)
+        self._output = cpu4 * self.weights #+ np.random.normal(0, self.noise)
         dwdt = (cpu4 - self.fade) * self.gain
         self.weights += dwdt * dt
         self.weights = np.clip(self.weights, 0, 1)
@@ -89,4 +90,5 @@ def motor_output(noise):
         motor += np.dot(rate.W_CPU1b_motor, cpu1b)
         output = (motor[0] - motor[1])
         return output
+        return (2*expit(100*output)-1)
     return f
