@@ -1,18 +1,25 @@
 {
+    "threads": 4,
     "experiments": {
         "dye": {
+            "N": 20,
             "type": "simulation",
-            "motor_factor": 2,
-            "T_outbound": 1500,
-            "T_inbound": 1500,
+            "T_outbound":1500,
+            "T_inbound": 3000,
+            "min_homing_distance": 300,
+            "motor_factor": -0.5,
             "cx": {
                 "type": "dye",
+                "output_layer": "motor",
                 "params": {
-                    "phi": 0.015,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "pfn_weight_factor": 1,
+                    "phi": 0.000015,
                     "beta": 0.1,
-                    "T_half": 137.66577568221356,
-                    "epsilon": 2e5,
-                    "length": 10e-4,
+                    "T_half": 13766.577568221355,
+                    "epsilon":2e5,
+                    "length": 1e-3,
                     "c_tot": 0.3
                 }
             }
