@@ -79,7 +79,7 @@ def motor_output(noise):
 def build_phase_shift_network(params) -> Network:
     # TODO: allow noisy weights
     noise = params.get("noise", 0.1)
-    motor_noise = params.get("motor_noise", 0.1)
+    motor_noise = params.get("motor_noise", noise)
     mem_gain = params.get("mem_gain", 0.0025)
     mem_fade = params.get("mem_fade", 0.1)
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
@@ -131,7 +131,7 @@ def build_phase_shift_network(params) -> Network:
             slope = cpu4_slope_tuned,
             bias = cpu4_bias_tuned,
             noise = noise,
-            background_activity = 0.0,
+            background_activity = params.get("pfn_background_activity", 0.0),
         ),
         "memory": PlasticWeightLayer(noise, mem_gain, mem_fade),
         "Pontine": FunctionLayer(
