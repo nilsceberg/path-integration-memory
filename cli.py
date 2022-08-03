@@ -4,7 +4,6 @@ from loguru import logger
 
 import argparse
 import json
-import os
 import pathlib
 import sys
 import collections
@@ -98,7 +97,7 @@ if __name__ == "__main__":
     experiment_parser.add_argument("--progress", action="store_true", help="show progress bar instead of log output")
 
     analyze_parser = subparsers.add_parser("analyze", aliases=["an"], help="analyze results")
-    analyze_parser.add_argument("results", help="result file/directory")
+    analyze_parser.add_argument("results", help="result file/directory", nargs='+')
     analyze_parser.set_defaults(func=analyze_results)
 
     args = parser.parse_args()

@@ -1,10 +1,8 @@
-from abc import abstractmethod
-from typing import Callable, Tuple, Union
+from typing import Tuple
 from datetime import datetime
 from pathlib import Path
 from multiprocessing import Pool
 from loguru import logger
-import random
 
 import sys
 import json
@@ -67,14 +65,17 @@ def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool, 
 
 
 
-def load_results(filename):
-    path = Path(filename)
+def load_results(filenames):
 
-    # If a directory is specified, load all results:
-    if path.is_dir():
-        paths = list(path.iterdir())
-    else:
-        paths = [path]
+    paths = []
+
+    for filename in filenames:
+        path = Path(filename)
+        # If a directory is specified, load all results:
+        if path.is_dir():
+            paths += list(path.iterdir())
+        else:
+            paths += [path]
 
     results = []
     for path in paths:
