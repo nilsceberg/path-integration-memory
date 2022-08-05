@@ -7,7 +7,7 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": -0.5,
+            "motor_factor": 0.5,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -15,12 +15,15 @@
                     "noise": 0.1,
                     "mem_initial": 0.0,
                     "pfn_weight_factor": 1,
-                    "phi": 0.00045,
+                    "phi": 0.065,
                     "beta": 0.1,
-                    "T_half": 1376657.7568221355,
-                    "epsilon":1e4,
+                    "T_half": 137665.77568221355,
+                    "epsilon": 1e4,
                     "length": 1e-3,
-                    "c_tot": 0.3
+                    "c_tot": 0.3,
+                    "volume": 1e-15,
+                    "wavelength": 750,
+                    "W_max": 1e-12
                 }
             }
         }
