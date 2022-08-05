@@ -67,13 +67,13 @@ def generate_random_route(T=1500, mean_acc=default_acc, drag=default_drag,
 
 
 def generate_path_from_parameters(path, speed = 0.35):
-    steps = np.sum(np.array(path)[:,0]) # first column, heading duration
+    steps = int(np.sum(np.array(path)[:,0])) # first column, heading duration
     headings = np.zeros(steps)
     velocities = np.zeros((steps, 2))
 
     t = 0
     for duration, heading in path:
-        for i in range(duration):
+        for i in range(int(duration)):
             headings[t] = heading
             # This order is so weird...
             velocities[t,:] = speed * np.array([
@@ -236,7 +236,7 @@ class SimulationExperiment(Experiment):
                     vary_speed = True,
                     min_homing_distance = self.parameters.get("min_homing_distance", 0),
                 )
-            elif isinstance(path, list):
+            elif isinstance(path, list) or isinstance(path, np.ndarray):
                 T_inbound = self.parameters["T_inbound"]
                 headings, velocities = generate_path_from_parameters(
                     path = path,
