@@ -248,8 +248,6 @@ class SimulationExperiment(Experiment):
             else:
                 raise RuntimeError(f"unkonown path type {str(type(path))}")
 
-            print(headings)
-
             logger.info("simulating outbound path")
             dt = 1.0 / time_subdivision
             for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
