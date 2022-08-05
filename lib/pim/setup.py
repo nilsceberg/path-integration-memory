@@ -3,9 +3,13 @@ from datetime import datetime
 from pathlib import Path
 from multiprocessing import Pool
 from loguru import logger
+from collections import deque
 
 import sys
 import json
+import numpy as np
+import uuid
+import copy
 
 from . import simulator
 from .experiment import Experiment
@@ -18,19 +22,33 @@ def run(setup_name: str, setup_config: dict, report = True, save = False, experi
     experiments = []
     color_index = 0
     for name, parameters in setup_config["experiments"].items():
-        N = parameters.get("N", 1)
-        for i in range(N):
-            experiment = parameters["type"]
-            if experiment == "simulation":
-                experiment = simulator.SimulationExperiment(parameters)
+
+        N = parameters.get("N", 1) # N must be integer
+        jobs = deque()
+        jobs.appendleft(parameters)
+
+        while jobs:
+            job = jobs.pop()
+            path, values = get_path_and_value(job)
+            if path is not None:
+                for value in values:
+                    new_job = copy.deepcopy(job)
+                    nested_set(new_job,path,value)
+                    jobs.appendleft(new_job)
             else:
-                raise RuntimeError(f"unknown experiment type: {experiment}")
+                job_id = uuid.uuid4()
+                for i in range(N):
+                    experiment = job["type"]
+                    if experiment == "simulation":
+                        experiment = simulator.SimulationExperiment(job)
+                    else:
+                        raise RuntimeError(f"unknown experiment type: {experiment}")
 
-            # choose a color for logging
-            color = experiment_log_colors[color_index]
-            color_index = (color_index + 1) % len(experiment_log_colors)
+                    # choose a color for logging
+                    color = experiment_log_colors[color_index]
+                    color_index = (color_index + 1) % len(experiment_log_colors)
 
-            experiments.append((setup_name, f"{name}-{i}" if N > 1 else name, timestamp, experiment, color, report, save, experiment_loggers))
+                    experiments.append((setup_name, f"{name}-{job_id}-{i}" if N > 1 else name, timestamp, experiment, color, report, save, experiment_loggers))
 
     logger.info(f"running {len(experiments)} experiments on {threads} threads")
     return Pool(threads).imap_unordered(run_experiment, experiments), len(experiments)
@@ -88,4 +106,24 @@ def load_results(filenames):
                 raise RuntimeError(f"unknown experiment type: {experiment_type}")
 
     return results
+
+def get_path_and_value(dic, prepath=[]):
+    for key,value in dic.items():
+        path = prepath + [key]
+        if isinstance(value,dict):
+            if "range" in value:
+                v = value["range"]
+                r = np.arange(v[0],v[1]+v[2],v[2]) # remove +v[2] if we don't want inclusive
+                return path,r
+            elif "list" in value:
+                return path, value["list"]
+            else:
+                return get_path_and_value(value, path)
+    return None,[]
+
+def nested_set(dic, path, value):
+    for key in path[:-1]:
+        dic = dic.setdefault(key,{})
+    dic[path[-1]] = value
+
 
