@@ -20,7 +20,7 @@ from . import plotter
 default_acc = 0.15  # A good value because keeps speed under 1
 default_drag = 0.15
 
-def generate_route(T=1500, mean_acc=default_acc, drag=default_drag,
+def generate_random_route(T=1500, mean_acc=default_acc, drag=default_drag,
                    kappa=100.0, max_acc=default_acc, min_acc=0.0,
                    vary_speed=False, min_homing_distance=0.0):
     """Generate a random outbound route using bee_simulator physics.
@@ -61,9 +61,28 @@ def generate_route(T=1500, mean_acc=default_acc, drag=default_drag,
         position += velocity[t, :]
 
     if np.linalg.norm(position) < min_homing_distance:
-        return generate_route(T, mean_acc, drag, kappa, max_acc, min_acc, vary_speed, min_homing_distance)
+        return generate_random_route(T, mean_acc, drag, kappa, max_acc, min_acc, vary_speed, min_homing_distance)
 
     return headings, velocity
+
+
+def generate_path_from_parameters(path, speed = 0.35):
+    steps = np.sum(np.array(path)[:,0]) # first column, heading duration
+    headings = np.zeros(steps)
+    velocities = np.zeros((steps, 2))
+
+    t = 0
+    for duration, heading in path:
+        for i in range(duration):
+            headings[t] = heading
+            # This order is so weird...
+            velocities[t,:] = speed * np.array([
+                np.sin(heading),
+                np.cos(heading),
+            ])
+            t += 1
+
+    return headings, velocities
 
 
 def rotate(dt, theta, r):
@@ -172,32 +191,6 @@ class SimulationExperiment(Experiment):
 
         logger.info("recording {}", self.layers_to_record)
 
-        #if cx_type == "basic":
-        #    cx = basic.CXBasic()
-        #elif cx_type == "rate":
-        #    cx = rate.CXRate(noise = noise)
-        #elif cx_type == "pontine":
-        #    cx = rate.CXRatePontine(noise = noise)
-        #elif cx_type == "dye":
-        #    phi = self.parameters["phi"]
-        #    beta = self.parameters["beta"]
-        #    T_half = self.parameters["T_half"]
-        #    epsilon = self.parameters["epsilon"]
-        #    length = self.parameters["length"]
-        #    c_tot = self.parameters["c_tot"]
-
-        #    cx = dye.CXDye(
-        #        noise=noise,
-        #        phi=phi,
-        #        beta=beta,
-        #        T_half=T_half,
-        #        epsilon=epsilon,
-        #        length=length,
-        #        c_tot = c_tot
-        #        )
-        #else:
-        #    raise RuntimeError("unknown cx type: " + cx_type)
-
     def _record(self):
         for layer in self.layers_to_record:
             output = self.cx.network.output(layer)
@@ -214,16 +207,13 @@ class SimulationExperiment(Experiment):
         np.random.seed(self.seed)
 
         # extract some parameters
-        T_outbound = self.parameters["T_outbound"]
-        T_inbound = self.parameters["T_inbound"]
         time_subdivision = self.parameters["time_subdivision"] if "time_subdivision" in self.parameters else 1
-
-        headings = np.zeros(T_outbound + T_inbound)
-        velocities = np.zeros((T_outbound + T_inbound, 2))
 
         if self.parameters["cx"]["type"] == "random":
             # Useful for control
-            headings, velocities = generate_route(
+            T_outbound = self.parameters.get("T_outbound", 0)
+            T_inbound = self.parameters["T_inbound"]
+            headings, velocities = generate_random_route(
                 T = T_outbound + T_inbound,
                 vary_speed = True,
             )
@@ -234,11 +224,31 @@ class SimulationExperiment(Experiment):
 
             logger.info("generating outbound path")
 
-            headings[0:T_outbound], velocities[0:T_outbound, :] = generate_route(
-                T = T_outbound,
-                vary_speed = True,
-                min_homing_distance = self.parameters.get("min_homing_distance", 0),
-            )
+            path = self.parameters.get("path", "random")
+            if path == "random": 
+                T_outbound = self.parameters["T_outbound"]
+                T_inbound = self.parameters["T_inbound"]
+                headings = np.zeros(T_outbound + T_inbound)
+                velocities = np.zeros((T_outbound + T_inbound, 2))
+
+                headings[0:T_outbound], velocities[0:T_outbound, :] = generate_random_route(
+                    T = T_outbound,
+                    vary_speed = True,
+                    min_homing_distance = self.parameters.get("min_homing_distance", 0),
+                )
+            elif isinstance(path, list):
+                T_inbound = self.parameters["T_inbound"]
+                headings, velocities = generate_path_from_parameters(
+                    path = path,
+                )
+                T_outbound = len(headings)
+                self.parameters["T_outbound"] = T_outbound
+                headings = np.hstack([headings, np.zeros(T_inbound)])
+                velocities = np.vstack([velocities, np.zeros((T_inbound, 2))])
+            else:
+                raise RuntimeError(f"unkonown path type {str(type(path))}")
+
+            print(headings)
 
             logger.info("simulating outbound path")
             dt = 1.0 / time_subdivision
