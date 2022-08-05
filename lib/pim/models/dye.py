@@ -1,15 +1,50 @@
 import numpy as np
-from pim.models.weights.shift import W_CPU4_CPU1a, W_CPU4_CPU1b, motor_output_theoretical
+from pim.models.weights.shift import motor_output_theoretical
 
-from scipy.interpolate import interp1d
 from scipy.integrate import solve_ivp
+from scipy.special import expit
 from abc import abstractmethod
 
 from pim.models import rate
-from pim.models.weights import cpu1a_pontine_output, cpu1b_pontine_output, motor_output, pontine_output
+from pim.models.weights import motor_output, pontine_output
 from ..network import Network, RecurrentForwardNetwork, InputLayer, Layer, FunctionLayer, Output, WeightedSynapse
 from .constants import *
 
+def cpu1a_pontine_output(noise, slope, bias):
+    def f(inputs):
+        """The memory and direction used together to get population code for
+        heading."""
+        reference, memory, pontine = inputs
+
+        inputs = 0.5 * np.dot(rate.W_CPU4_CPU1a, memory)
+        inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
+
+        # inputs = (inputs > 0) * 1.0
+        inputs = expit(100*(inputs-0.0001))
+
+        inputs -= reference
+
+        #return np.clip(inputs, 0, 1000)
+        return rate.noisy_sigmoid(inputs, slope, bias, noise)
+    return f
+
+def cpu1b_pontine_output(noise, slope, bias):
+    def f(inputs):
+        """The memory and direction used together to get population code for
+        heading."""
+        reference, memory, pontine = inputs
+
+        inputs = 0.5 * np.dot(rate.W_CPU4_CPU1b, memory)
+        inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
+
+        # inputs = (inputs > 0) * 1.0
+        inputs = expit(100*(inputs-0.0001))
+
+        inputs -= reference
+
+        #return np.clip(inputs, 0, 1000)
+        return rate.noisy_sigmoid(inputs, slope, bias, noise)
+    return f
 
 class DyeLayer(Layer):
     def __init__(self):
@@ -27,8 +62,8 @@ class DyeLayer(Layer):
         pass
 
     def output(self, network: Network) -> Output:
-        # return network.output("CPU4") * self.weights
-        return np.log10(network.output("CPU4") * self.weights)#* 30000
+        return network.output("CPU4") * self.weights
+        # return np.log10(network.output("CPU4") * self.weights)#* 30000
 
 class SimpleDyeLayer(DyeLayer):
     def __init__(self, gain=0.0025):
@@ -42,14 +77,16 @@ class SimpleDyeLayer(DyeLayer):
         self.weights += -self.backreaction_rate*dt + self.gain*inputs*dt
 
 class AdvancedDyeLayer(DyeLayer):
-    def __init__(self, epsilon, length, T_half, phi, beta, c_tot):
+    def __init__(self, epsilon, length, T_half, phi, c_tot, volume, wavelength, W_max):
         self.epsilon = epsilon
         self.length = length
         self.k = np.log(2) / T_half
+        E = 6.62697915 * 1e-34 * 299792458 / (wavelength * 1e-9)
+        self.k_phi = W_max / (E * volume * 6.02214076*1e23)
         self.phi = phi
         self.c_tot = c_tot
 
-        self.last_c = np.ones(16) * 0#* phi * beta / self.k
+        self.last_c = np.ones(16)*0
 
         super().__init__()
 
@@ -63,18 +100,14 @@ class AdvancedDyeLayer(DyeLayer):
             return 10 ** -A
 
         def dcdt(t, c):
-            return (-self.k * c + self.phi * inputs * (1 - T(c)))
+            return -self.k * c +  inputs * (1 - T(c)) * self.phi #* self.k_phi
 
         solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt))
         c = solution.y[:,-1]
 
         self.last_c = c
 
-        # if ((c > self.c_tot).any()):
-        #     print(c)
-
         self.weights = T(c)
-        # print(self.weights)
 
 def build_dye_network(params) -> Network:
 
@@ -84,6 +117,10 @@ def build_dye_network(params) -> Network:
     beta = params.get("beta", 0.0)
     phi = params.get("phi", 1.0)
     c_tot = params.get("c_tot", 0.3)
+
+    volume = params.get("volume", 1e-18)
+    wavelength = params.get("wavelength", 750)
+    W_max = params.get("W_max", 1e-15)
 
     noise = params.get("noise", 0.1)
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
@@ -130,9 +167,11 @@ def build_dye_network(params) -> Network:
             epsilon = epsilon, 
             length = length, 
             T_half = T_half, 
-            beta = beta,
             phi = phi,
-            c_tot = c_tot
+            c_tot = c_tot,
+            volume = volume,
+            wavelength = wavelength,
+            W_max = W_max
         ),
         "Pontine": FunctionLayer(
             inputs = ["memory"],
