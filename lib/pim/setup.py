@@ -24,19 +24,19 @@ def run(setup_name: str, setup_config: dict, report = True, save = False, experi
     for name, parameters in setup_config["experiments"].items():
 
         N = parameters.get("N", 1) # N must be integer
-        jobs = deque()
-        jobs.appendleft(parameters)
+        configs = deque()
+        configs.appendleft(parameters)
 
-        while jobs:
-            job = jobs.pop()
+        while configs:
+            job = configs.pop()
             path, values = get_path_and_value(job)
             if path is not None:
                 for value in values:
                     new_job = copy.deepcopy(job)
                     nested_set(new_job,path,value)
-                    jobs.appendleft(new_job)
+                    configs.appendleft(new_job)
             else:
-                job_id = uuid.uuid4()
+                config_id = str(uuid.uuid4())
                 for i in range(N):
                     experiment = job["type"]
                     if experiment == "simulation":
@@ -48,14 +48,14 @@ def run(setup_name: str, setup_config: dict, report = True, save = False, experi
                     color = experiment_log_colors[color_index]
                     color_index = (color_index + 1) % len(experiment_log_colors)
 
-                    experiments.append((setup_name, f"{name}-{job_id}-{i}" if N > 1 else name, timestamp, experiment, color, report, save, experiment_loggers))
+                    experiments.append((setup_name, f"{name}-{config_id}-{i}" if N > 1 else f"{name}-{config_id}", config_id, timestamp, experiment, color, report, save, experiment_loggers))
 
     logger.info(f"running {len(experiments)} experiments on {threads} threads")
     return Pool(threads).imap_unordered(run_experiment, experiments), len(experiments)
 
 
-def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool, bool]):
-    setup_name, name, timestamp, experiment, color, report, save, experiment_loggers = task
+def run_experiment(task: Tuple[str, str, str, datetime, Experiment, str, bool, bool, bool]):
+    setup_name, name, config_id, timestamp, experiment, color, report, save, experiment_loggers = task
 
     if experiment_loggers:
         logger.add(
@@ -68,7 +68,7 @@ def run_experiment(task: Tuple[str, str, datetime, Experiment, str, bool, bool, 
     with logger.contextualize(experiment = name):
         try:
             logger.info(f"running experiment {name} of type {experiment.__class__.__name__}")
-            results = experiment.run(name)
+            results = experiment.run(name, config_id)
             logger.info(f"done running {name}")
 
             if save:

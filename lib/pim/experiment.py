@@ -6,8 +6,9 @@ from loguru import logger
 
 
 class ExperimentResults:
-    def __init__(self, name: str, parameters: dict) -> None:
+    def __init__(self, name: str, config_id: str, parameters: dict) -> None:
         self.name = name
+        self.config_id = config_id
         self.parameters = parameters
 
     @abstractmethod
@@ -23,6 +24,7 @@ class ExperimentResults:
             "setup": setup,
             "timestamp": timestamp.isoformat(),
             "name": self.name,
+            "config_id": self.config_id,
             "parameters": self.parameters,
             "results": self.serialize()
         }
@@ -35,6 +37,6 @@ class ExperimentResults:
 
 class Experiment:
     @abstractmethod
-    def run(self, name: str) -> ExperimentResults:
+    def run(self, name: str, config_id: str) -> ExperimentResults:
         pass
 

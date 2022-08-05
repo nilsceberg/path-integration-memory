@@ -111,6 +111,7 @@ def get_next_state(dt, heading, velocity, rotation, acceleration, drag=0.5):
 def load_results(data):
     return SimulationResults(
         name = data["name"],
+        config_id = data["config_id"],
         parameters = data["parameters"],
         headings = data["results"]["headings"],
         velocities = data["results"]["velocities"],
@@ -119,8 +120,8 @@ def load_results(data):
 
 
 class SimulationResults(ExperimentResults):
-    def __init__(self, name: str, parameters: dict, headings, velocities, recordings: dict) -> None:
-        super().__init__(name, parameters)
+    def __init__(self, name: str, config_id: str, parameters: dict, headings, velocities, recordings: dict) -> None:
+        super().__init__(name, config_id, parameters)
 
         # Make sure these fields are np arrays (shouldn't matter if they already are):
         self.headings = np.array(headings)
@@ -202,7 +203,7 @@ class SimulationExperiment(Experiment):
                 logger.trace("layer {} internal: {}", layer, internal)
 
 
-    def run(self, name: str) -> ExperimentResults:
+    def run(self, name: str, config_id: str) -> ExperimentResults:
         logger.info("seeding: {}", self.seed)
         np.random.seed(self.seed)
 
@@ -275,6 +276,6 @@ class SimulationExperiment(Experiment):
                 headings[t], velocities[t,:] = heading, velocity
                 self._record()
 
-        return SimulationResults(name, self.parameters, headings, velocities, recordings = self.recordings)
+        return SimulationResults(name, config_id, self.parameters, headings, velocities, recordings = self.recordings)
 
 
