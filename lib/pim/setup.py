@@ -115,6 +115,14 @@ def get_path_and_value(dic, prepath=[]):
                 v = value["range"]
                 r = np.arange(v[0],v[1]+v[2],v[2]) # remove +v[2] if we don't want inclusive
                 return path,r
+            elif "linspace" in value:
+                v = value["linspace"]
+                r = np.linspace(v[0],v[1],v[2])
+                return path,r
+            elif "logspace" in value:
+                v = value["logspace"]
+                r = np.logspace(v[0],v[1],v[2])
+                return path,r
             elif "list" in value:
                 return path, value["list"]
             else:
