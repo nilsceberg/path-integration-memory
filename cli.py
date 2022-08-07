@@ -77,7 +77,10 @@ def run_experiment(args):
 
 def analyze_results(args):
     results = pim.setup.load_results(args.results)
-    pim.analysis.print_analysis(results)
+    if pim.analysis.has_several_configs(results):
+        pim.analysis.save_analysis(results)
+    else:
+        pim.analysis.print_analysis(results)
 
 
 if __name__ == "__main__":

@@ -23,7 +23,7 @@ def run(setup_name: str, setup_config: dict, report = True, save = False, experi
     color_index = 0
     for name, parameters in setup_config["experiments"].items():
 
-        N = parameters.get("N", 1) # N must be integer
+        N = parameters.setdefault("N", 1) # N must be integer
         configs = deque()
         configs.appendleft(parameters)
 
@@ -84,7 +84,7 @@ def run_experiment(task: Tuple[str, str, str, datetime, Experiment, str, bool, b
 
 
 def load_results(filenames):
-
+    logger.info("reading files to analyse...")
     paths = []
 
     for filename in filenames:
