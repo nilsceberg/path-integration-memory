@@ -7,10 +7,12 @@ import json
 import pathlib
 import sys
 import collections
+from typing import Generator
 from tqdm import tqdm
 
 import pim.setup
 import pim.analysis
+from pim.simulator import SimulationResults
 
 
 def deep_update(obj: dict, path: str, value: str):
@@ -76,11 +78,21 @@ def run_experiment(args):
 
 
 def analyze_results(args):
-    results = pim.setup.load_results(args.results)
-    if pim.analysis.has_several_configs(results):
+    # paths is a list of paths, resolved from arguments,
+    # load_results gives us a lazy generator for actually loading them.
+    # Once we've started to go through them once to determine whether they contain
+    # several configs, we need to restart the generator, hence the multiple load_results calls.
+    paths = pim.setup.enumerate_results(args.results)
+
+    # TODO: maybe we could use a metadata file with information about config number etc.,
+    # so that we don't have to load all files twice in the worst case (when there is only one config).
+    several = pim.analysis.has_several_configs(pim.setup.load_results(paths))
+
+    results = pim.setup.load_results(tqdm(paths, colour="green", delay=1))
+    if several:
         pim.analysis.save_analysis(results)
     else:
-        pim.analysis.print_analysis(results)
+        pim.analysis.print_analysis(results, individual = (len(paths) == 1))
 
 
 if __name__ == "__main__":

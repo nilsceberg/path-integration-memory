@@ -2,6 +2,7 @@ import json
 import sys
 import numpy as np
 
+from typing import Iterable
 from datetime import datetime
 from pathlib import Path
 from loguru import logger
@@ -11,32 +12,32 @@ from pim.simulator import SimulationResults
 
 
 # TODO: this assumes that result is a SimulationResult
-def print_analysis(results):
-    if len(results) == 1:
-        result = results[0]
-        closest_position = result.closest_position()
-        closest_distance = np.linalg.norm(closest_position)
-    
-        print(f"Closest distance to home: {closest_distance} steps")
-        result.report()
+def print_analysis(results: "Iterable[SimulationResults]", individual = False):
+    if individual:
+        for result in results:
+            closest_position = result.closest_position()
+            closest_distance = np.linalg.norm(closest_position)
+        
+            print(f"Closest distance to home: {closest_distance} steps")
+            result.report()
     else:
         closest_distances = (
             np.linalg.norm(result.closest_position()) for result in results
         )
-        print(type(closest_distances))
-        sys.exit(0)
-        mean_closest_distance = np.mean(list(tqdm(closest_distances, total=len(results), colour="green")))
+        #print(type(closest_distances))
+        #sys.exit(0)
+        mean_closest_distance = np.mean(list(closest_distances))
 
         print(f"Mean closest distance to home: {mean_closest_distance} steps")
 
-def has_several_configs(results: list[SimulationResults]):
+def has_several_configs(results: "Iterable[SimulationResults]"):
     configs = set()
     for result in results:
         configs.add(result.config_id)
         if len(configs) > 1: return True
     return False
 
-def save_analysis(results: list[SimulationResults], results_dir="results"):
+def save_analysis(results: "Iterable[SimulationResults]", results_dir="results"):
     timestamp = datetime.now()
 
     logger.info("calculating distances")

@@ -1,9 +1,10 @@
-from typing import Tuple
+from typing import Tuple, Iterable
 from datetime import datetime
 from pathlib import Path
 from multiprocessing import Pool
 from loguru import logger
 from collections import deque
+from tqdm import tqdm
 
 import sys
 import json
@@ -81,12 +82,10 @@ def run_experiment(task: Tuple[str, str, str, datetime, Experiment, str, bool, b
         except Exception:
             logger.exception("unhandled exception")
 
-
-
-def load_results(filenames):
-    logger.info("reading files to analyse...")
+def enumerate_results(filenames) -> "list[Path]":
     paths = []
 
+    logger.info("finding files to analyse...")
     for filename in filenames:
         path = Path(filename)
         # If a directory is specified, load all results:
@@ -94,18 +93,22 @@ def load_results(filenames):
             paths += list(path.iterdir())
         else:
             paths += [path]
+    
+    return paths
 
-    results = []
-    for path in paths:
+
+# TODO: Type annotation assumes SimulationResults...
+def load_results(paths: "Iterable[Path]") -> Iterable[simulator.SimulationResults]:
+    def load_path(path):
         with path.open() as f:
             data = json.load(f)
             experiment_type = data["parameters"]["type"]
             if experiment_type == "simulation":
-                results.append(simulator.load_results(data))
+                return simulator.load_results(data)
             else:
                 raise RuntimeError(f"unknown experiment type: {experiment_type}")
 
-    return results
+    return (load_path(path) for path in paths)
 
 def get_path_and_value(dic, prepath=[]):
     for key,value in dic.items():
