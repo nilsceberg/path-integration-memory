@@ -9,6 +9,7 @@
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "motor_factor": 0.5,
+            "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -17,8 +18,8 @@
                     "mem_initial": 0.0,
                     "pfn_weight_factor": 1,
                     "phi": 0.00045,
-                    "beta": { "linspace": [0, 1, 10] },
-                    "T_half": { "logspace": [100, 1000000, 10] },
+                    "beta": { "linspace": [0, 1, 50] },
+                    "T_half": { "logspace": [1, 6, 20] },
                     "epsilon": 1e4,
                     "length": 1e-3,
                     "c_tot": 0.3
