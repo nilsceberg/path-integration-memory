@@ -1,6 +1,5 @@
 """Experiments to reproduce results from Stone 2017."""
 
-from re import A
 from loguru import logger
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,11 +10,6 @@ import random
 from .experiment import Experiment, ExperimentResults
 from . import cx
 from . import plotter
-
-#from .modelsmodels import dye
-#from .modelsmodels import rate
-#from .modelsmodels import basic
-
 
 default_acc = 0.15  # A good value because keeps speed under 1
 default_drag = 0.15
