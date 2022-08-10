@@ -4,6 +4,7 @@ from pim.models.weights.shift import motor_output_theoretical
 from scipy.integrate import solve_ivp
 from scipy.special import expit
 from abc import abstractmethod
+from loguru import logger
 
 from pim.models import rate
 from pim.models.weights import motor_output, pontine_output
@@ -85,29 +86,39 @@ class AdvancedDyeLayer(DyeLayer):
         self.k_phi = W_max / (E * volume * 6.02214076*1e23)
         self.phi = phi
         self.c_tot = c_tot
-
-        self.last_c = np.ones(16)*0
+        self.initialize(0.0)
 
         super().__init__()
 
     def internal(self):
             return self.last_c
 
+    def transmittance(self, c):
+        A = self.epsilon * self.length * (self.c_tot - c)
+        return 10 ** -A
+
+    def dcdt(self, u):
+        def f(t, c):
+            T = self.transmittance(c)
+            return -self.k * c + u * (1 - T) * self.phi #* self.k_phi
+        return f
+
+    def stable_point(self, u):
+        from scipy.optimize import root_scalar
+        roots = root_scalar(lambda c: self.dcdt(u)(0, c), bracket=[0, 1])
+        return roots.root
+
+    def initialize(self, c0):
+        self.last_c = np.ones(16) * c0
+
     def update_weights(self, inputs: Output, dt: float):
-
-        def T(c):
-            A = self.epsilon * self.length * (self.c_tot - c)
-            return 10 ** -A
-
-        def dcdt(t, c):
-            return -self.k * c +  inputs * (1 - T(c)) * self.phi #* self.k_phi
-
+        dcdt  = self.dcdt(inputs)
         solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt))
         c = solution.y[:,-1]
 
         self.last_c = c
 
-        self.weights = T(c)
+        self.weights = self.transmittance(c)
 
 def build_dye_network(params) -> Network:
 
@@ -124,6 +135,22 @@ def build_dye_network(params) -> Network:
 
     noise = params.get("noise", 0.1)
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
+
+    dye = AdvancedDyeLayer(
+        epsilon = epsilon, 
+        length = length, 
+        T_half = T_half, 
+        phi = phi,
+        c_tot = c_tot,
+        volume = volume,
+        wavelength = wavelength,
+        W_max = W_max
+    )
+
+    if params.get("start_at_stable", True):
+        stable_point = dye.stable_point(beta)
+        logger.debug("starting at stable point: {}", stable_point)
+        dye.initialize(stable_point)
 
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
@@ -163,16 +190,7 @@ def build_dye_network(params) -> Network:
             noise = noise,
             background_activity = beta,
         ),
-        "memory": AdvancedDyeLayer(
-            epsilon = epsilon, 
-            length = length, 
-            T_half = T_half, 
-            phi = phi,
-            c_tot = c_tot,
-            volume = volume,
-            wavelength = wavelength,
-            W_max = W_max
-        ),
+        "memory": dye,
         "Pontine": FunctionLayer(
             inputs = ["memory"],
             function = pontine_output(noise),
