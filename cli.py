@@ -7,12 +7,10 @@ import json
 import pathlib
 import sys
 import collections
-from typing import Generator
 from tqdm import tqdm
 
 import pim.setup
 import pim.analysis
-from pim.simulator import SimulationResults
 
 
 def deep_update(obj: dict, path: str, value: str):
