@@ -1,0 +1,27 @@
+{
+    "threads": 8,
+    "experiments": {
+        "dye": {
+            "N": 20,
+            "type": "simulation",
+            "comment": "to test non-linear integration; uses expit for readout and a dye-ish memory layer that outputs its concentration levels",
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.5,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "integration_only": true,
+                    "phi": { "logspace": [-5, 2, 20] },
+                    "beta": 0.0,
+                    "k": 0.0
+                }
+            }
+        }
+    }
+}

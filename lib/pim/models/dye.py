@@ -78,10 +78,10 @@ class SimpleDyeLayer(DyeLayer):
         self.weights += -self.backreaction_rate*dt + self.gain*inputs*dt
 
 class AdvancedDyeLayer(DyeLayer):
-    def __init__(self, epsilon, length, T_half, phi, c_tot, volume, wavelength, W_max):
+    def __init__(self, epsilon, length, k, phi, c_tot, volume, wavelength, W_max):
         self.epsilon = epsilon
         self.length = length
-        self.k = np.log(2) / T_half
+        self.k = k
         E = 6.62697915 * 1e-34 * 299792458 / (wavelength * 1e-9)
         self.k_phi = W_max / (E * volume * 6.02214076*1e23)
         self.phi = phi
@@ -120,11 +120,55 @@ class AdvancedDyeLayer(DyeLayer):
 
         self.weights = self.transmittance(c)
 
-def build_dye_network(params) -> Network:
+# Not actulaly a dye layer, or even weight based, but it fits in the framework:
+class NonLinearMemoryLayer(DyeLayer):
+    def __init__(self, k, phi):
+        self.k = k
+        self.phi = phi
+        self.initialize(0.0)
 
+        super().__init__()
+
+    def internal(self):
+        return self.last_c
+
+    def transmittance(self, c):
+        A = (0.3 - c)
+        return 10 ** -A
+
+    def dcdt(self, u):
+        def f(t, c):
+            T = c #self.transmittance(c)
+            return -self.k * c + u * (1 - T) * self.phi
+        return f
+
+    def stable_point(self, u):
+        from scipy.optimize import root_scalar
+        roots = root_scalar(lambda c: self.dcdt(u)(0, c), bracket=[0, 1])
+        return roots.root
+
+    def initialize(self, c0):
+        self.last_c = np.ones(16) * c0
+
+    def update_weights(self, inputs: Output, dt: float):
+        dcdt  = self.dcdt(inputs)
+        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt))
+        c = solution.y[:,-1]
+
+        self.last_c = c
+
+        # So that we can view it from notebooks:
+        return solution
+
+    def output(self, network: Network) -> Output:
+        return self.last_c
+
+
+def build_dye_network(params) -> Network:
     epsilon = params.get("epsilon", 1.0)
     length = params.get("length", 10e-4)
     T_half = params.get("T_half", 1.0)
+    k = params.get("k", np.log(2) / T_half)
     beta = params.get("beta", 0.0)
     phi = params.get("phi", 1.0)
     c_tot = params.get("c_tot", 0.3)
@@ -136,16 +180,21 @@ def build_dye_network(params) -> Network:
     noise = params.get("noise", 0.1)
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
 
-    dye = AdvancedDyeLayer(
-        epsilon = epsilon, 
-        length = length, 
-        T_half = T_half, 
-        phi = phi,
-        c_tot = c_tot,
-        volume = volume,
-        wavelength = wavelength,
-        W_max = W_max
-    )
+    if params.get("integration_only", False):
+        dye = NonLinearMemoryLayer(
+            k, phi
+        )
+    else:
+        dye = AdvancedDyeLayer(
+            epsilon = epsilon, 
+            length = length, 
+            k = k, 
+            phi = phi,
+            c_tot = c_tot,
+            volume = volume,
+            wavelength = wavelength,
+            W_max = W_max
+        )
 
     if params.get("start_at_stable", True):
         stable_point = dye.stable_point(beta)
