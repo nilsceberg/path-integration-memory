@@ -4,20 +4,21 @@
         "shift": {
             "N": 100,
             "type": "simulation",
+            "comment": "not tested for a while",
             "T_outbound": 1500,
             "T_inbound": 1500,
-            "motor_factor": 0.1,
+            "min_homing_distance": 300,
+            "motor_factor": -0.5,
             "cx": {
                 "type": "weights",
                 "output_layer": "motor",
                 "params": {
                     "noise": 0.1,
+                    "motor_noise": 0.1,
                     "mem_initial": 0.5,
-                    "mem_fade": 0.15,
+                    "mem_fade": 0.65,
                     "mem_gain": 0.0023,
-                    "pfn_weight_factor": 1,
-                    "cpu1_slope": 100,
-                    "cpu1_bias": 5
+                    "pfn_background_activity": 0.5
                 }
             }
         }

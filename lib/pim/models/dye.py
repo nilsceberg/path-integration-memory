@@ -11,7 +11,7 @@ from pim.models.weights import motor_output, pontine_output
 from ..network import Network, RecurrentForwardNetwork, InputLayer, Layer, FunctionLayer, Output, WeightedSynapse
 from .constants import *
 
-def cpu1a_pontine_output(noise, slope, bias):
+def cpu1a_pontine_output(noise, slope, bias, cheat, cheat_bias, cheat_slope):
     def f(inputs):
         """The memory and direction used together to get population code for
         heading."""
@@ -20,16 +20,17 @@ def cpu1a_pontine_output(noise, slope, bias):
         inputs = 0.5 * np.dot(rate.W_CPU4_CPU1a, memory)
         inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
 
-        # inputs = (inputs > 0) * 1.0
-        inputs = expit(100*(inputs-0.0001))
+        #inputs = expit(100*(inputs-0.0001))
+        if cheat:
+            # inputs = (inputs > 0) * 1.0 # extra cheat
+            inputs = expit(cheat_slope*(inputs-cheat_bias))
 
         inputs -= reference
 
-        #return np.clip(inputs, 0, 1000)
         return rate.noisy_sigmoid(inputs, slope, bias, noise)
     return f
 
-def cpu1b_pontine_output(noise, slope, bias):
+def cpu1b_pontine_output(noise, slope, bias, cheat, cheat_bias, cheat_slope):
     def f(inputs):
         """The memory and direction used together to get population code for
         heading."""
@@ -38,12 +39,12 @@ def cpu1b_pontine_output(noise, slope, bias):
         inputs = 0.5 * np.dot(rate.W_CPU4_CPU1b, memory)
         inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
 
-        # inputs = (inputs > 0) * 1.0
-        inputs = expit(100*(inputs-0.0001))
+        if cheat:
+            # inputs = (inputs > 0) * 1.0 # extra cheat
+            inputs = expit(cheat_slope*(inputs-cheat_bias))
 
         inputs -= reference
 
-        #return np.clip(inputs, 0, 1000)
         return rate.noisy_sigmoid(inputs, slope, bias, noise)
     return f
 
@@ -177,6 +178,10 @@ def build_dye_network(params) -> Network:
     phi = params.get("phi", 1.0)
     c_tot = params.get("c_tot", 0.3)
 
+    cheat = params.get("cheat", False)
+    cheat_bias = params.get("cheat_bias", 0.0001)
+    cheat_slope = params.get("cheat_slope", 100)
+
     volume = params.get("volume", 1e-18)
     wavelength = params.get("wavelength", 750)
     W_max = params.get("W_max", 1e-15)
@@ -259,6 +264,9 @@ def build_dye_network(params) -> Network:
                 noise,
                 params.get("cpu1_slope", cpu1_pontine_slope_tuned),
                 params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+                cheat,
+                cheat_bias,
+                cheat_slope,
             ),
             initial = np.zeros(N_CPU1A),
         ),
@@ -268,6 +276,9 @@ def build_dye_network(params) -> Network:
                 noise,
                 params.get("cpu1_slope", cpu1_pontine_slope_tuned),
                 params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+                cheat,
+                cheat_bias,
+                cheat_slope,
             ),
             initial = np.zeros(N_CPU1B),
         ),

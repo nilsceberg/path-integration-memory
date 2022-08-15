@@ -14,6 +14,7 @@
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
+                    "cheat": true,
                     "noise": 0.1,
                     "mem_initial": 0.0,
                     "pfn_weight_factor": 1,
