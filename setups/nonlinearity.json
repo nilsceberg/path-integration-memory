@@ -20,7 +20,8 @@
                     "model_transmittance": false,
                     "phi": { "logspace": [-5, 0, 50] },
                     "beta": 0.0,
-                    "k": 0.0
+                    "k": 0.0,
+                    "start_at_stable": true
                 }
             }
         },
@@ -43,7 +44,8 @@
                     "model_transmittance": true,
                     "phi": { "logspace": [-5, 0, 50] },
                     "beta": 0.0,
-                    "k": 0.0
+                    "k": 0.0,
+                    "start_at_stable": true
                 }
             }
         }
