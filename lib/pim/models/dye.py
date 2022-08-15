@@ -205,7 +205,7 @@ def build_dye_network(params) -> Network:
             W_max = W_max
         )
 
-    if params.get("start_at_stable", True):
+    if params.get("start_at_stable", False):
         stable_point = dye.stable_point(beta)
         logger.debug("starting at stable point: {}", stable_point)
         dye.initialize(stable_point)

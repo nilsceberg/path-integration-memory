@@ -18,9 +18,11 @@
                     "phi": 0.00045,
                     "beta": 0.1,
                     "T_half": 137665.77568221355,
+                    "k": 5.035000000000001e-06,
                     "epsilon": 1e4,
                     "length": 1e-3,
-                    "c_tot": 0.3
+                    "c_tot": 0.3,
+                    "start_at_stable": false
                 }
             }
         }
