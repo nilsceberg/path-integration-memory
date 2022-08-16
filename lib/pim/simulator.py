@@ -123,6 +123,8 @@ class SimulationResults(ExperimentResults):
 
         self.recordings = recordings
 
+        self._cached_path = None
+
     def report(self):
         logger.info("plotting route")
         fig, ax = plotter.plot_route(
@@ -145,16 +147,28 @@ class SimulationResults(ExperimentResults):
         }
 
     def reconstruct_path(self):
+        if self._cached_path != None:
+            return self._cached_path
+
         position = np.zeros(2)
         positions = [position]
         for velocity in self.velocities:
             position = position + velocity
             positions.append(position)
+
+        self._cached_path = positions
         return positions
 
     def closest_position(self):
         path = self.reconstruct_path()
         return min(path[self.parameters["T_outbound"]:], key = np.linalg.norm)
+
+    def farthest_position(self):
+        path = self.reconstruct_path()
+        return max(path[self.parameters["T_outbound"]:], key = np.linalg.norm)
+
+    def homing_position(self):
+        return self.reconstruct_path()[self.parameters["T_outbound"]]
 
     def closest_position_timestep(self):
         path = self.reconstruct_path()

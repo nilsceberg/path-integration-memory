@@ -44,15 +44,28 @@ def save_analysis(results: "Iterable[SimulationResults]", results_dir="results")
 
     configs = {}
     for result in results:
-        if result.config_id in configs:
-            configs[result.config_id]["mean_distance"] += np.linalg.norm(result.closest_position())
-        else:
+        if result.config_id not in configs:
             configs[result.config_id] = {
-                "mean_distance": 0,
+                "mean_min_distance": 0,
+                "mean_max_distance": 0,
+                "mean_extra_distance": 0,
+                "mean_homing_distance": 0,
+                "mean_mean_distance": 0,
                 "parameters": result.parameters,
             }
+        
+        configs[result.config_id]["mean_min_distance"] += np.linalg.norm(result.closest_position())
+        configs[result.config_id]["mean_max_distance"] += np.linalg.norm(result.farthest_position())
+        configs[result.config_id]["mean_homing_distance"] += np.linalg.norm(result.homing_position())
+        configs[result.config_id]["mean_extra_distance"] += np.linalg.norm(result.farthest_position()) - np.linalg.norm(result.homing_position())
+        configs[result.config_id]["mean_mean_distance"] += np.mean(np.linalg.norm(result.reconstruct_path()[result.parameters["T_outbound"]:], axis=1))
+
     for config in configs:
-        configs[config]["mean_distance"] /= configs[config]["parameters"]["N"]
+        configs[config]["mean_min_distance"] /= configs[config]["parameters"]["N"]
+        configs[config]["mean_max_distance"] /= configs[config]["parameters"]["N"]
+        configs[config]["mean_extra_distance"] /= configs[config]["parameters"]["N"]
+        configs[config]["mean_homing_distance"] /= configs[config]["parameters"]["N"]
+        configs[config]["mean_mean_distance"] /= configs[config]["parameters"]["N"]
 
     filename = Path(f"{results_dir}/distances/{timestamp.strftime('%Y%m%d-%H%M%S')}.json")
     path = filename.parent
