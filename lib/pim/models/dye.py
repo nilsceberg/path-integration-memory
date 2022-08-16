@@ -92,7 +92,7 @@ class AdvancedDyeLayer(DyeLayer):
         super().__init__()
 
     def internal(self):
-            return self.last_c
+        return self.last_c
 
     def transmittance(self, c):
         A = self.epsilon * self.length * (self.c_tot - c)
