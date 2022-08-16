@@ -37,7 +37,12 @@ def run_experiment(args):
         # override setup config with command-line arguments
         if args.threads:
             setup["threads"] = args.threads
+
+        # if one or more --only, remove experiments that weren't specified
+        if args.only != []:
+            setup["experiments"] = { name: experiment for (name, experiment) in setup["experiments"].items() if name in args.only }
         
+        # add any command-line --record entries to experiments
         for experiment in setup["experiments"].values():
             if "record" in experiment:
                 experiment["record"] += args.record
@@ -106,6 +111,7 @@ if __name__ == "__main__":
     experiment_parser.add_argument("--throw", dest="save", action="store_false", help="don't save results")
     experiment_parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5", default=[])
     experiment_parser.add_argument("--record", action="append", help="additional elements to record (for every experiment)", default=[])
+    experiment_parser.add_argument("--only", action="append", help="run only specified experiments", default=[])
     
     experiment_parser.add_argument("--progress", action="store_true", help="show progress bar instead of log output")
 
