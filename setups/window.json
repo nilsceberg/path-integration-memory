@@ -1,0 +1,64 @@
+{
+    "comment": "attempts to find whether there is a window where the steering works for non-linear integration (direct readout)",
+    "threads": 8,
+    "experiments": {
+        "with-transmittance": {
+            "N": 50,
+            "type": "simulation",
+            "comment": "concentration readout with (1-T) factor instead of (1-c)",
+            "T_outbound": { "list": [
+                0,
+                100,
+                200,
+                300,
+                400,
+                500,
+                600,
+                700,
+                800,
+                900,
+                1000,
+                1100,
+                1200,
+                1300,
+                1400,
+                1500,
+                1600,
+                1700,
+                1800,
+                1900,
+                2000,
+                2100,
+                2200,
+                2300,
+                2400,
+                2500,
+                2600,
+                2700,
+                2800,
+                2900,
+                3000
+            ]},
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.5,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": true,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "integration_only": true,
+                    "model_transmittance": true,
+                    "phi": 0.00045,
+                    "beta": 0.0,
+                    "k": 0.0,
+                    "start_at_stable": false
+                }
+            }
+        }
+    }
+}
+
