@@ -127,16 +127,20 @@ class SimulationResults(ExperimentResults):
 
     def report(self):
         logger.info("plotting route")
-        fig, ax = plotter.plot_route(
-            h = self.headings,
-            v = self.velocities,
-            T_outbound = self.parameters["T_outbound"],
-            T_inbound = self.parameters["T_inbound"],
-            plot_speed = True,
-            plot_heading = True,
-            quiver_color = "black",
-            )
+        #fig, ax = plotter.plot_route(
+        #    h = self.headings,
+        #    v = self.velocities,
+        #    T_outbound = self.parameters["T_outbound"],
+        #    T_inbound = self.parameters["T_inbound"],
+        #    plot_speed = True,
+        #    plot_heading = True,
+        #    quiver_color = "black",
+        #    )
 
+        plt.figure(figsize=(10, 10))
+        ax = plt.axes()
+        ax.set_aspect(1)
+        self.plot_path(ax)
         plt.show()
 
     def serialize(self):
@@ -179,8 +183,8 @@ class SimulationResults(ExperimentResults):
         T_out = self.parameters["T_outbound"]
         path = np.array(self.reconstruct_path())
 
-        ax.plot(path[:T_out,0], path[:T_out,1])
-        ax.plot(path[T_out:,0], path[T_out:,1])
+        ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")
+        ax.plot(path[T_out:,0], path[T_out:,1], label="inbound")
 
         closest = self.closest_position()
         ax.plot([0, closest[0]], [0, closest[1]], "--", label=f"closest distance of {np.linalg.norm(self.closest_position()):.2f} at t={self.closest_position_timestep()}")
