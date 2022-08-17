@@ -1,14 +1,15 @@
 {
-    "comment": "attempts to find whether there is a window where the steering works for non-linear integration (direct readout)",
+    "comment": "for producing plots for presentations",
     "threads": 8,
     "experiments": {
         "direct-readout": {
-            "N": 50,
+            "N": 1,
+            "seed": 42,
             "type": "simulation",
             "comment": "direct readout of concentration",
-            "T_outbound": { "range": [100, 4100, 200] },
+            "T_outbound": 1500,
             "T_inbound": 1500,
-            "min_homing_distance": 0,
+            "min_homing_distance": 300,
             "motor_factor": -0.5,
             "cx": {
                 "type": "dye",
@@ -27,12 +28,13 @@
             }
         },
         "direct-readout-cheat": {
-            "N": 50,
+            "N": 1,
+            "seed": 42,
             "type": "simulation",
             "comment": "direct readout of concentration with cheat",
-            "T_outbound": { "range": [100, 4100, 200] },
+            "T_outbound": 1500,
             "T_inbound": 1500,
-            "min_homing_distance": 0,
+            "min_homing_distance": 300,
             "motor_factor": 0.5,
             "cx": {
                 "type": "dye",
@@ -51,12 +53,13 @@
             }
         },
         "weight-readout": {
-            "N": 50,
+            "N": 1,
+            "seed": 42,
             "type": "simulation",
             "comment": "readout by weighted signal",
-            "T_outbound": { "range": [100, 4100, 200] },
+            "T_outbound": 1500,
             "T_inbound": 1500,
-            "min_homing_distance": 0,
+            "min_homing_distance": 300,
             "motor_factor": -0.5,
             "cx": {
                 "type": "dye",
@@ -77,12 +80,13 @@
             }
         },
         "weight-readout-cheat": {
-            "N": 50,
+            "N": 1,
+            "seed": 42,
             "type": "simulation",
             "comment": "readout by weighted signal with cheat",
-            "T_outbound": { "range": [100, 4100, 200] },
+            "T_outbound": 1500,
             "T_inbound": 1500,
-            "min_homing_distance": 0,
+            "min_homing_distance": 300,
             "motor_factor": 0.5,
             "cx": {
                 "type": "dye",
@@ -104,4 +108,5 @@
         }
     }
 }
+
 
