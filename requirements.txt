@@ -12,3 +12,9 @@ websockets
 plotly
 tqdm
 ipywidgets
+ipympl
+wheel
+jupyterlab
+dash
+jupyter-dash
+
