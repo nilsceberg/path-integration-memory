@@ -2,6 +2,54 @@
     "comment": "attempts to find whether there is a window where the steering works for non-linear integration (direct readout)",
     "threads": 8,
     "experiments": {
+        "simple": {
+            "N": 50,
+            "type": "simulation",
+            "comment": "no transmittance modelling",
+            "T_outbound": { "range": [100, 4100, 200] },
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": -0.5,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": false,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "integration_only": true,
+                    "model_transmittance": false,
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0.0,
+                    "start_at_stable": false
+                }
+            }
+        },
+        "simple-cheat": {
+            "N": 50,
+            "type": "simulation",
+            "comment": "no transmittance modelling with cheat",
+            "T_outbound": { "range": [100, 4100, 200] },
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.5,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": true,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "integration_only": true,
+                    "model_transmittance": false,
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0.0,
+                    "start_at_stable": false
+                }
+            }
+        },
         "direct-readout": {
             "N": 50,
             "type": "simulation",
