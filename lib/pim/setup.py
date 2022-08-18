@@ -49,7 +49,7 @@ def run(setup_name: str, setup_config: dict, report = True, save = False, experi
                     color = experiment_log_colors[color_index]
                     color_index = (color_index + 1) % len(experiment_log_colors)
 
-                    experiments.append((setup_name, f"{name}-{config_id}-{i}" if N > 1 else f"{name}-{config_id}", config_id, timestamp, experiment, color, report, save, experiment_loggers))
+                    experiments.append((setup_name, f"{name}.{config_id}.{i}" if N > 1 else f"{name}.{config_id}", config_id, timestamp, experiment, color, report, save, experiment_loggers))
 
     logger.info(f"running {len(experiments)} experiments on {threads} threads")
     return Pool(threads).imap_unordered(run_experiment, experiments), len(experiments)
