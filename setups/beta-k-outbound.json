@@ -1,0 +1,32 @@
+{
+    "comment": "explores range for phi for k=0, beta=0.1 (unstable)",
+    "threads": 4,
+    "experiments": {
+        "cheat": {
+            "N": 10,
+            "type": "simulation",
+            "T_inbound":1500,
+            "T_outbound": { "range": [100, 4100, 200] },
+            "min_homing_distance": 0,
+            "motor_factor": 0.5,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": true,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "pfn_weight_factor": 1,
+                    "phi": 0.00045,
+                    "beta": { "logspace": [-2, 0, 20] },
+                    "k": { "logspace": [-5, 0, 20] },
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "start_at_stable": true
+                }
+            }
+        }
+    }
+}
+
