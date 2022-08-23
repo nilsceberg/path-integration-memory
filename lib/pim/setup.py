@@ -4,10 +4,9 @@ from pathlib import Path
 from multiprocessing import Pool
 from loguru import logger
 from collections import deque
-from tqdm import tqdm
 
 import sys
-import json
+import pickle
 import numpy as np
 import uuid
 import copy
@@ -100,8 +99,8 @@ def enumerate_results(filenames) -> "list[Path]":
 # TODO: Type annotation assumes SimulationResults...
 def load_results(paths: "Iterable[Path]") -> Iterable[simulator.SimulationResults]:
     def load_path(path):
-        with path.open() as f:
-            data = json.load(f)
+        with path.open("rb") as f:
+            data = pickle.load(f)
             experiment_type = data["parameters"]["type"]
             if experiment_type == "simulation":
                 return simulator.load_results(data)
