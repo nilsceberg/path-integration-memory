@@ -123,9 +123,10 @@ class AdvancedDyeLayer(DyeLayer):
 
 # Not actulaly a dye layer, or even weight based, but it fits in the framework:
 class NonLinearMemoryLayer(DyeLayer):
-    def __init__(self, k, phi, model_transmittance=False):
+    def __init__(self, k, phi, epsilon_l=1.0, model_transmittance=False):
         self.k = k
         self.phi = phi
+        self.epsilon_l = epsilon_l
         self.model_transmittance = model_transmittance
         self.initialize(0.0)
 
@@ -136,7 +137,7 @@ class NonLinearMemoryLayer(DyeLayer):
 
     def transmittance(self, c):
         if self.model_transmittance:
-            A = (0.3 - c)
+            A = self.epsilon_l * (0.3 - c)
             return 10 ** -A
         else:
             return c
@@ -157,7 +158,9 @@ class NonLinearMemoryLayer(DyeLayer):
 
     def update_weights(self, inputs: Output, dt: float):
         dcdt  = self.dcdt(inputs)
-        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt))
+        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt),
+            #t_eval=np.linspace(0, dt, 100)
+            )
         c = solution.y[:,-1]
 
         self.last_c = c
@@ -191,7 +194,7 @@ def build_dye_network(params) -> Network:
 
     if params.get("integration_only", False):
         dye = NonLinearMemoryLayer(
-            k, phi, model_transmittance=params.get("model_transmittance", False)
+            k, phi, epsilon_l = epsilon * length, model_transmittance=params.get("model_transmittance", False)
         )
     else:
         dye = AdvancedDyeLayer(

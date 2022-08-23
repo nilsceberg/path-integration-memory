@@ -22,6 +22,8 @@
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
                     "start_at_stable": false
                 }
             }
@@ -46,6 +48,8 @@
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
                     "start_at_stable": false
                 }
             }
@@ -70,6 +74,8 @@
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
                     "start_at_stable": false
                 }
             }
@@ -94,6 +100,8 @@
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
                     "start_at_stable": false
                 }
             }

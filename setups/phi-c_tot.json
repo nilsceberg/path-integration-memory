@@ -1,0 +1,57 @@
+{
+    "threads": 4,
+    "experiments": {
+        "cheat-phi-vs-ctot": {
+            "N": 20,
+            "type": "simulation",
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.5,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": true,
+                    "integration_only":false,
+                    "start_at_stable": false,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "pfn_weight_factor": 1,
+                    "phi": {"logspace": [-5,-1, 28]},
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon":1e4,
+                    "length": 1e-3,
+                    "c_tot": {"linspace": [0.6,0.9,28]}
+                }
+            }
+        },
+        "phi-vs-ctot": {
+            "N": 20,
+            "type": "simulation",
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": -0.5,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": false,
+                    "integration_only":false,
+                    "start_at_stable": false,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "pfn_weight_factor": 1,
+                    "phi": {"logspace": [-5,-1,28]},
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon":1e4,
+                    "length": 1e-3,
+                    "c_tot": {"linspace": [0.6,0.9,28]}
+                }
+            }
+        }
+    }
+}
