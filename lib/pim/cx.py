@@ -7,17 +7,24 @@ from .models.constants import *
 from .network import InputLayer, Network
 
 
-def cpu4_model(args, x):
+def memory_model(args, x):
     return args[0] * np.cos(np.pi + 2*x + args[1])
 
 def tb1_model(args, x):
     return 0.5 + np.cos(np.pi + x + args[0]) * 0.5
 
-def fit_cpu4(data):
-    xs = np.linspace(0, 2*np.pi, N_CPU4, endpoint = False)
-    error = lambda args: cpu4_model(args, xs) - data
-    params, _ = scipy.optimize.leastsq(error, np.array([0.1, 0.01]))
+def fit_memory(data):
+    xs = np.linspace(0, 2*np.pi, N_CPU4//2, endpoint = False)
+    error = lambda args: memory_model(args, xs) - data
+    params, _ = scipy.optimize.leastsq(func=error, x0=np.array([0, 0]))
     return params
+
+def fit_memory_fft(data):
+    data = data.reshape(2,-1)
+    signal = np.sum(data, axis=0)
+    fund_freq = np.fft.fft(signal)[1]
+    angle = -np.angle(np.conj(fund_freq))
+    return (0, angle)
 
 def fit_tb1(data):
     xs = np.linspace(0, 2*np.pi, N_TB1, endpoint = False)
@@ -76,14 +83,14 @@ class CentralComplex:
         self.network.step(dt)
 
         self.tb1 = self.network.output("TB1")
-        self.cpu4 = self.network.output("CPU4")
+        self.memory = self.network.output("memory")
         return self.network.output(self.output_layer)
 
     def setup(self):
         pass
 
     def estimate_position(self):
-        return fit_cpu4(self.cpu4)
+        return fit_memory(self.memory)
 
     def to_cartesian(self, polar):
         return np.array([

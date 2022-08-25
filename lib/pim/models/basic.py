@@ -80,6 +80,8 @@ def motor_output(inputs):
 
 
 def build_network(params) -> Network:
+    cpu4_mem_gain = params.get("cpu4_mem_gain",0.0025)
+
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
         "heading": InputLayer(),
@@ -99,9 +101,9 @@ def build_network(params) -> Network:
             function = tn2_output,
             initial = np.zeros(N_TN2),
         ),
-        "CPU4": CPU4Layer("TB1", "TN1", "TN2", gain=params["cpu4_mem_gain"]),
+        "memory": CPU4Layer("TB1", "TN1", "TN2", gain=cpu4_mem_gain),
         "CPU1": FunctionLayer(
-            inputs = ["TB1", "CPU4"],
+            inputs = ["TB1", "memory"],
             function = cpu1_output,
             initial = np.zeros(N_CPU1),
         ),

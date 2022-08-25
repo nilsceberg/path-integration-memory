@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from datetime import datetime
 from pathlib import Path
-import json
+import pickle
 from loguru import logger
 
 
@@ -31,8 +31,8 @@ class ExperimentResults:
         filename = Path(f"{results_dir}/{setup}_{timestamp.strftime('%Y%m%d-%H%M%S')}/{self.name}.json")
         path = filename.parent
         path.mkdir(parents = True, exist_ok = True)
-        with open(filename, "w") as f:
-            json.dump(output, f, indent = 2, default=lambda x: x.tolist()) # assume that anything non-serializable is a numpy array
+        with open(filename, "wb") as f:
+            pickle.dump(output, f)
         logger.info("saved experiment results as {}", filename)
 
 class Experiment:

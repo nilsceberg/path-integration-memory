@@ -100,6 +100,9 @@ class CPU4Layer(Layer):
                              self.bias, self.noise)
 
 class CPU4PontineLayer(CPU4Layer):
+    def internal(self):
+        return self.memory
+
     def step(self, network: Network, dt: float):
         """Memory neurons update.
         cpu4[0-7] store optic flow peaking at left 45 deg
@@ -292,8 +295,8 @@ def cpu1b_pontine_output(noise):
 
 
 def build_network(params, CPU4LayerClass = CPU4Layer) -> Network:
-    noise = params["noise"]
-    cpu4_mem_gain = 0.005
+    noise = params.get("noise",0.1)
+    cpu4_mem_gain = params.get("cpu4_mem_gain",0.005)
 
     # TODO: allow noisy weights
     return RecurrentForwardNetwork({
@@ -324,7 +327,7 @@ def build_network(params, CPU4LayerClass = CPU4Layer) -> Network:
             function = tn2_output(noise),
             initial = np.zeros(N_TN2),
         ),
-        "CPU4": CPU4LayerClass(
+        "memory": CPU4LayerClass(
             "TB1", "TN1", "TN2",
             W_TN_CPU4,
             W_TB1_CPU4,
@@ -334,12 +337,12 @@ def build_network(params, CPU4LayerClass = CPU4Layer) -> Network:
             noise,
         ),
         "CPU1a": FunctionLayer(
-            inputs = ["TB1", "CPU4"],
+            inputs = ["TB1", "memory"],
             function = cpu1a_output(noise),
             initial = np.zeros(N_CPU1A)
         ),
         "CPU1b": FunctionLayer(
-            inputs = ["TB1", "CPU4"],
+            inputs = ["TB1", "memory"],
             function = cpu1a_output(noise),
             initial = np.zeros(N_CPU1A)
         ),
@@ -351,8 +354,8 @@ def build_network(params, CPU4LayerClass = CPU4Layer) -> Network:
 
 def build_network_pontine(params) -> Network:
     # TODO: allow noisy weights
-    noise = params["noise"]
-    cpu4_mem_gain = 0.0025
+    noise = params.get("noise",0.1)
+    cpu4_mem_gain = params.get("cpu4_mem_gain",0.0025)
 
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
@@ -382,7 +385,7 @@ def build_network_pontine(params) -> Network:
             function = tn2_output(noise),
             initial = np.zeros(N_TN2),
         ),
-        "CPU4": CPU4PontineLayer(
+        "memory": CPU4PontineLayer(
             "TB1", "TN1", "TN2",
             W_TN_CPU4,
             W_TB1_CPU4,
@@ -392,17 +395,17 @@ def build_network_pontine(params) -> Network:
             noise,
         ),
         "Pontine": FunctionLayer(
-            inputs = ["CPU4"],
+            inputs = ["memory"],
             function = pontine_output(noise),
             initial = np.zeros(N_Pontine)
         ),
         "CPU1a": FunctionLayer(
-            inputs = [WeightedSynapse("TB1", W_TB1_CPU1a), "CPU4", "Pontine"],
+            inputs = [WeightedSynapse("TB1", W_TB1_CPU1a), "memory", "Pontine"],
             function = cpu1a_pontine_output(noise),
             initial = np.zeros(N_CPU1A),
         ),
         "CPU1b": FunctionLayer(
-            inputs = [WeightedSynapse("TB1", W_TB1_CPU1b), "CPU4", "Pontine"],
+            inputs = [WeightedSynapse("TB1", W_TB1_CPU1b), "memory", "Pontine"],
             function = cpu1b_pontine_output(noise),
             initial = np.zeros(N_CPU1B),
         ),
