@@ -174,6 +174,22 @@ class SimulationResults(ExperimentResults):
     def homing_position(self):
         return self.reconstruct_path()[self.parameters["T_outbound"]]
 
+    def angular_rmse(self):
+        # TODO: handle special case where decoded vector points away from actual home
+        if "memory" in self.recordings and "internal" in self.recordings["memory"]:
+            path = self.reconstruct_path()
+            angles = [np.arctan2(x,y) + np.pi for x,y in path]
+            distances = np.linalg.norm(path,axis=1)
+
+            decoded_angles = [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
+            diff_angles = np.abs(np.subtract(angles[1:],decoded_angles[:]))
+            alpha = np.minimum(2*np.pi - diff_angles, diff_angles)
+            
+            error = np.abs(np.multiply(distances[1:],np.sin(alpha)))
+            rmse = np.sqrt(np.mean(np.power(error,2)))
+            return rmse #, angles[1:], decoded_angles
+        return 0
+
     def closest_position_timestep(self):
         path = self.reconstruct_path()
         return min(range(self.parameters["T_outbound"], self.parameters["T_outbound"] + self.parameters["T_inbound"]), key = lambda i: np.linalg.norm(path[i]))
