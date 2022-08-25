@@ -12,6 +12,8 @@ from tqdm import tqdm
 import pim.setup
 import pim.analysis
 
+import pim.math
+
 
 def deep_update(obj: dict, path: str, value: str):
     keys = path.split(".")
@@ -25,6 +27,9 @@ def deep_update(obj: dict, path: str, value: str):
         obj[key] = t(value)
 
 def run_experiment(args):
+    if args.slow_ode:
+        pim.math.slow_solver = True
+
     if args.progress:
         logger.remove()
 
@@ -112,8 +117,10 @@ if __name__ == "__main__":
     experiment_parser.add_argument("--override", action="append", help="override experiment parameter, e.g. --override stone.noise=0.5", default=[])
     experiment_parser.add_argument("--record", action="append", help="additional elements to record (for every experiment)", default=[])
     experiment_parser.add_argument("--only", action="append", help="run only specified experiments", default=[])
-    
     experiment_parser.add_argument("--progress", action="store_true", help="show progress bar instead of log output")
+
+    # Math options:
+    experiment_parser.add_argument("--slow-ode", action="store_true", help="run with a slower but more accurate ODE solver")
 
     analyze_parser = subparsers.add_parser("analyze", aliases=["an"], help="analyze results")
     analyze_parser.add_argument("results", help="result file/directory", nargs='+')
