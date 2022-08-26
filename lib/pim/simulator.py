@@ -174,19 +174,23 @@ class SimulationResults(ExperimentResults):
     def homing_position(self):
         return self.reconstruct_path()[self.parameters["T_outbound"]]
 
-    def angular_rmse(self):
+    def angular_error(self):
+        path = self.reconstruct_path()
+        angles = [np.arctan2(x,y) + np.pi for x,y in path]
+        decoded_angles = [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
+        diff_angles = np.abs(np.subtract(angles[1:],decoded_angles[:]))
+        return np.minimum(2*np.pi - diff_angles, diff_angles)
+
+    def memory_error(self):
+        path = self.reconstruct_path()
+        distances = np.linalg.norm(path,axis=1)
+        alpha = self.angular_error()
+        return np.abs([d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)])
+
+    def memory_rmse(self):
         # TODO: handle special case where decoded vector points away from actual home
         if "memory" in self.recordings and "internal" in self.recordings["memory"]:
-            path = self.reconstruct_path()
-            angles = [np.arctan2(x,y) + np.pi for x,y in path]
-            distances = np.linalg.norm(path,axis=1)
-
-            decoded_angles = [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
-            diff_angles = np.abs(np.subtract(angles[1:],decoded_angles[:]))
-            alpha = np.minimum(2*np.pi - diff_angles, diff_angles)
-            
-            error = np.abs([d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)])
-            # error = np.abs(np.multiply(distances[1:],np.sin(alpha)))
+            error = self.memory_error()
             rmse = np.sqrt(np.mean(np.power(error,2)))
             return rmse #, angles[1:], decoded_angles
         return 0
