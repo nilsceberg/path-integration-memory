@@ -10,6 +10,7 @@ from pim.models import rate
 from pim.models.weights import motor_output, pontine_output
 from ..network import Network, RecurrentForwardNetwork, InputLayer, Layer, FunctionLayer, Output, WeightedSynapse
 from .constants import *
+import pim.math
 
 def cpu1a_pontine_output(noise, slope, bias, cheat, cheat_bias, cheat_slope):
     def f(inputs):
@@ -114,12 +115,10 @@ class AdvancedDyeLayer(DyeLayer):
 
     def update_weights(self, inputs: Output, dt: float):
         dcdt  = self.dcdt(inputs)
-        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt))
-        c = solution.y[:,-1]
+        self.last_c, T, Y = pim.math.step_ode(dcdt, self.last_c, dt)
+        self.weights = self.transmittance(self.last_c)
 
-        self.last_c = c
-
-        self.weights = self.transmittance(c)
+        return T, Y
 
 # Not actulaly a dye layer, or even weight based, but it fits in the framework:
 class NonLinearMemoryLayer(DyeLayer):
@@ -158,15 +157,10 @@ class NonLinearMemoryLayer(DyeLayer):
 
     def update_weights(self, inputs: Output, dt: float):
         dcdt  = self.dcdt(inputs)
-        solution = solve_ivp(dcdt, y0 = self.last_c, t_span=(0, dt),
-            #t_eval=np.linspace(0, dt, 100)
-            )
-        c = solution.y[:,-1]
+        self.last_c, T, Y = pim.math.step_ode(dcdt, self.last_c, dt)
+        self.weights = self.transmittance(self.last_c)
 
-        self.last_c = c
-
-        # So that we can view it from notebooks:
-        return solution
+        return T, Y
 
     def output(self, network: Network) -> Output:
         return self.last_c

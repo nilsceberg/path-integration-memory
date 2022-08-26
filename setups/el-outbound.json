@@ -1,0 +1,59 @@
+{
+    "comment": "to what extend does epsilon*l affect readout window, and is it a concentration or transmittance problem?",
+    "threads": 8,
+    "experiments": {
+        "direct-readout": {
+            "N": 50,
+            "type": "simulation",
+            "comment": "direct readout of concentration",
+            "T_outbound": { "range": [100, 4100, 200] },
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": -0.5,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": false,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "integration_only": true,
+                    "model_transmittance": true,
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0.0,
+                    "epsilon": { "logspace": [-2, 3, 20] },
+                    "length": 1,
+                    "start_at_stable": false
+                }
+            }
+        },
+        "weight-readout": {
+            "N": 50,
+            "type": "simulation",
+            "comment": "readout by weighted signal",
+            "T_outbound": { "range": [100, 4100, 200] },
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": -0.5,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": false,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "integration_only": false,
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0.0,
+                    "epsilon": { "logspace": [-2, 3, 20] },
+                    "length": 1,
+                    "c_tot": 0.3,
+                    "start_at_stable": false
+                }
+            }
+        }
+    }
+}
+
