@@ -185,7 +185,8 @@ class SimulationResults(ExperimentResults):
             diff_angles = np.abs(np.subtract(angles[1:],decoded_angles[:]))
             alpha = np.minimum(2*np.pi - diff_angles, diff_angles)
             
-            error = np.abs(np.multiply(distances[1:],np.sin(alpha)))
+            error = np.abs([d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)])
+            # error = np.abs(np.multiply(distances[1:],np.sin(alpha)))
             rmse = np.sqrt(np.mean(np.power(error,2)))
             return rmse #, angles[1:], decoded_angles
         return 0
