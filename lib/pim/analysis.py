@@ -52,6 +52,7 @@ def save_analysis(results: "Iterable[SimulationResults]", results_dir="results")
                 "mean_homing_distance": 0,
                 "mean_mean_distance": 0,
                 "mean_memory_rmse": 0,
+                "mean_tortuosity": 0,
                 "parameters": result.parameters,
             }
         
@@ -61,6 +62,7 @@ def save_analysis(results: "Iterable[SimulationResults]", results_dir="results")
         configs[result.config_id]["mean_extra_distance"] += np.linalg.norm(result.farthest_position()) - np.linalg.norm(result.homing_position())
         configs[result.config_id]["mean_mean_distance"] += np.mean(np.linalg.norm(result.reconstruct_path()[result.parameters["T_outbound"]:], axis=1))
         configs[result.config_id]["mean_memory_rmse"] += result.memory_rmse()
+        configs[result.config_id]["mean_tortuosity"] += result.homing_tortuosity()
 
     for config in configs:
         configs[config]["mean_min_distance"] /= configs[config]["parameters"]["N"]
@@ -69,6 +71,7 @@ def save_analysis(results: "Iterable[SimulationResults]", results_dir="results")
         configs[config]["mean_homing_distance"] /= configs[config]["parameters"]["N"]
         configs[config]["mean_mean_distance"] /= configs[config]["parameters"]["N"]
         configs[config]["mean_memory_rmse"] /= configs[config]["parameters"]["N"]
+        configs[config]["mean_tortuosity"] /= configs[config]["parameters"]["N"]
 
     filename = Path(f"{results_dir}/distances/{timestamp.strftime('%Y%m%d-%H%M%S')}.json")
     path = filename.parent

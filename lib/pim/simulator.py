@@ -1,5 +1,7 @@
 """Experiments to reproduce results from Stone 2017."""
 
+from typing import List, Tuple
+from flask import current_app
 from loguru import logger
 import numpy as np
 import matplotlib.pyplot as plt
@@ -59,6 +61,62 @@ def generate_random_route(T=1500, mean_acc=default_acc, drag=default_drag,
 
     return headings, velocity
 
+def angular_difference(a, b):
+    x = a - b
+    return (x + np.pi) % (np.pi * 2) - np.pi
+#   diff_angles = np.abs(a, b)
+#   return np.minimum(2*np.pi - diff_angles, diff_angles)
+
+
+def generate_path_from_waypoints(waypoints: List[Tuple[float, float]], rotation_speed=0.1, mean_acc=default_acc, drag=default_drag,
+                   kappa=100.0, max_acc=default_acc, min_acc=0.0,
+                   vary_speed=False):
+    """Generate a path following a list of waypoints using bee_simulator physics."""
+    # Start at the first waypoint
+    position = np.array(waypoints[0])
+
+    headings = [0]
+    velocities = [[0, 0]]
+
+    def get_direction(waypoint, position):
+        direction = waypoint - position
+        direction = direction / np.linalg.norm(direction)
+        angle = np.arctan2(direction[0], direction[1])
+        return direction, angle
+
+    dt = 1.0
+    for waypoint in waypoints[1:]:
+        direction, start_angle = get_direction(waypoint, position)
+        current_angle = start_angle
+
+        # When have we reached a waypoint?
+        # Using a tolerance distance might result in the bee simply orbiting the waypoint
+        # if it is unable to turn fast enough.
+        # Instead, let's considered it reached when it has passed the tangent line
+        # in relation to where it started, i.e. when the angular difference is >= 90 degrees.
+        while np.abs(angular_difference(start_angle, current_angle)) < np.pi / 2:
+            # Let's always use mean_acc for acceleration for now
+            acceleration = mean_acc
+            heading_error = angular_difference(current_angle, headings[-1])
+            rotation = np.minimum(rotation_speed, np.abs(heading_error)) * np.sign(heading_error)
+
+            heading, velocity = get_next_state(
+                dt = dt,
+                heading = headings[-1],
+                velocity = np.array(velocities[-1]),
+                rotation = rotation,
+                acceleration = acceleration,
+                drag = drag,
+            )
+
+            position += velocity * dt
+            headings.append(heading)
+            velocities.append(velocity)
+
+            direction, current_angle = get_direction(waypoint, position)
+
+    return np.array(headings), np.array(velocities)
+
 
 def generate_path_from_parameters(path, speed = 0.35):
     steps = int(np.sum(np.array(path)[:,0])) # first column, heading duration
@@ -78,6 +136,42 @@ def generate_path_from_parameters(path, speed = 0.35):
 
     return headings, velocities
 
+def reconstruct_path(velocities):
+    position = np.zeros(2)
+    positions = [position]
+    for velocity in velocities:
+        position = position + velocity
+        positions.append(position)
+    return positions
+
+def farthest_position(path):
+    return max(np.linalg.norm(path, axis=1))
+
+def path_center_of_mass(path):
+    return np.mean(path, axis=0)
+
+def estimate_search_pattern(path, tol = 0.05):
+    # Consider a shrinking averaging window computing the "center of mass"
+    # of the path;
+    # when the CoM moves less than some tolerance level
+    # for convergence, we have reached the search pattern.
+    pattern = path
+    com = path_center_of_mass(pattern)
+
+    N = np.shape(path)[0]
+    n = N-1
+
+    while n >= 0:
+        candidate_pattern = path[n:]
+        new_com = path_center_of_mass(candidate_pattern)
+        if np.linalg.norm(com - new_com) < tol:
+            com = new_com
+            pattern = candidate_pattern
+            break
+        com = new_com
+        n -= 1
+
+    return pattern
 
 def rotate(dt, theta, r):
     """Return new heading after a rotation around Z axis."""
@@ -154,12 +248,7 @@ class SimulationResults(ExperimentResults):
         if self._cached_path != None:
             return self._cached_path
 
-        position = np.zeros(2)
-        positions = [position]
-        for velocity in self.velocities:
-            position = position + velocity
-            positions.append(position)
-
+        positions = reconstruct_path(self.velocities)
         self._cached_path = positions
         return positions
 
@@ -178,8 +267,7 @@ class SimulationResults(ExperimentResults):
         path = self.reconstruct_path()
         angles = [np.arctan2(x,y) + np.pi for x,y in path]
         decoded_angles = [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
-        diff_angles = np.abs(np.subtract(angles[1:],decoded_angles[:]))
-        return np.minimum(2*np.pi - diff_angles, diff_angles)
+        return angular_difference(angles[1:], decoded_angles[:])
 
     def memory_error(self):
         path = self.reconstruct_path()
@@ -198,8 +286,17 @@ class SimulationResults(ExperimentResults):
     def closest_position_timestep(self):
         path = self.reconstruct_path()
         return min(range(self.parameters["T_outbound"], self.parameters["T_outbound"] + self.parameters["T_inbound"]), key = lambda i: np.linalg.norm(path[i]))
+    
+    def search_pattern(self):
+        pattern = estimate_search_pattern(self.reconstruct_path()[self.parameters["T_outbound"]:], tol=0.05)
+        center = path_center_of_mass(pattern)
+        return center, farthest_position(pattern - center)
 
-    def plot_path(self, ax):
+    def homing_tortuosity(self):
+        #homing_displacement =  - self.homing_position()
+        return 0 #np.
+
+    def plot_path(self, ax, search_pattern=True):
         T_in = self.parameters["T_inbound"]
         T_out = self.parameters["T_outbound"]
         path = np.array(self.reconstruct_path())
@@ -209,6 +306,12 @@ class SimulationResults(ExperimentResults):
 
         closest = self.closest_position()
         ax.plot([0, closest[0]], [0, closest[1]], "--", label=f"closest distance of {np.linalg.norm(self.closest_position()):.2f} at t={self.closest_position_timestep()}")
+
+        if search_pattern:
+            center, radius = self.search_pattern()
+            ax.plot(center[0], center[1], '*', label="search pattern center")
+            circle = plt.Circle(center, radius, fill=False, color="r")
+            ax.add_patch(circle)
 
         ax.plot(0, 0, "*")
 
