@@ -23,7 +23,7 @@
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
-                    "epsilon": 100,
+                    "epsilon": 10,
                     "length": 1,
                     "c_tot": 0.3,
                     "start_at_stable": false
@@ -51,7 +51,7 @@
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
-                    "epsilon": 100,
+                    "epsilon": 10,
                     "length": 1,
                     "c_tot": 0.3,
                     "start_at_stable": false
