@@ -1,5 +1,6 @@
 """Experiments to reproduce results from Stone 2017."""
 
+from types import MemberDescriptorType
 from typing import List, Tuple
 from flask import current_app
 from loguru import logger
@@ -12,6 +13,7 @@ import random
 from .experiment import Experiment, ExperimentResults
 from . import cx
 from . import plotter
+from .models import constants
 
 default_acc = 0.15  # A good value because keeps speed under 1
 default_drag = 0.15
@@ -61,11 +63,10 @@ def generate_random_route(T=1500, mean_acc=default_acc, drag=default_drag,
 
     return headings, velocity
 
-def angular_difference(a, b):
+def angular_distance(a, b):
+    """Returns angular distance between a and b, between -pi and +pi"""
     x = a - b
     return (x + np.pi) % (np.pi * 2) - np.pi
-#   diff_angles = np.abs(a, b)
-#   return np.minimum(2*np.pi - diff_angles, diff_angles)
 
 
 def generate_path_from_waypoints(waypoints: List[Tuple[float, float]], rotation_speed=0.1, mean_acc=default_acc, drag=default_drag,
@@ -94,10 +95,10 @@ def generate_path_from_waypoints(waypoints: List[Tuple[float, float]], rotation_
         # if it is unable to turn fast enough.
         # Instead, let's considered it reached when it has passed the tangent line
         # in relation to where it started, i.e. when the angular difference is >= 90 degrees.
-        while np.abs(angular_difference(start_angle, current_angle)) < np.pi / 2:
+        while np.abs(angular_distance(start_angle, current_angle)) < np.pi / 2:
             # Let's always use mean_acc for acceleration for now
             acceleration = mean_acc
-            heading_error = angular_difference(current_angle, headings[-1])
+            heading_error = angular_distance(current_angle, headings[-1])
             rotation = np.minimum(rotation_speed, np.abs(heading_error)) * np.sign(heading_error)
 
             heading, velocity = get_next_state(
@@ -219,7 +220,7 @@ class SimulationResults(ExperimentResults):
 
         self._cached_path = None
 
-    def report(self):
+    def report(self, decode=False):
         logger.info("plotting route")
         #fig, ax = plotter.plot_route(
         #    h = self.headings,
@@ -231,9 +232,9 @@ class SimulationResults(ExperimentResults):
         #    quiver_color = "black",
         #    )
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 20))
         ax1.set_aspect(1)
-        self.plot_path(ax1)
+        self.plot_path(ax1, decode=decode)
         ax1.legend()
 
         x, y1, y2, y3 = self.homing_tortuosity()
@@ -244,6 +245,10 @@ class SimulationResults(ExperimentResults):
         ax2.set_xlabel("% of optimal homing time")
         ax2.set_ylabel("% of homing distance remaining")
         ax2.legend()
+
+        if "memory" in self.recordings:
+            ax3.plot(self.recordings["memory"]["internal"])
+            ax4.plot(self.recordings["memory"]["output"])
 
         plt.show()
 
@@ -273,20 +278,27 @@ class SimulationResults(ExperimentResults):
     def homing_position(self):
         return self.reconstruct_path()[self.parameters["T_outbound"]]
 
+    def memory_headings(self):
+        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
+
+    def readout_headings(self):
+        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["output"]]
+
+    def home_headings(self):
+        return [np.arctan2(x,y) + np.pi for x,y in self.reconstruct_path()]
+
     def angular_error(self):
-        path = self.reconstruct_path()
-        angles = [np.arctan2(x,y) + np.pi for x,y in path]
-        decoded_angles = [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
-        return angular_difference(angles[1:], decoded_angles[:])
+        angles = self.home_headings()
+        decoded_angles = self.memory_headings()
+        return angular_distance(angles[1:], decoded_angles[:])
 
     def memory_error(self):
         path = self.reconstruct_path()
         distances = np.linalg.norm(path,axis=1)
-        alpha = self.angular_error()
-        return np.abs([d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)])
+        alpha = np.abs(self.angular_error())
+        return [d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)]
 
     def memory_rmse(self):
-        # TODO: handle special case where decoded vector points away from actual home
         if "memory" in self.recordings and "internal" in self.recordings["memory"]:
             error = self.memory_error()
             rmse = np.sqrt(np.mean(np.power(error,2)))
@@ -316,7 +328,7 @@ class SimulationResults(ExperimentResults):
         return T / optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
 
 
-    def plot_path(self, ax, search_pattern=True):
+    def plot_path(self, ax, search_pattern=True, decode=False):
         T_in = self.parameters["T_inbound"]
         T_out = self.parameters["T_outbound"]
         path = np.array(self.reconstruct_path())
@@ -332,6 +344,28 @@ class SimulationResults(ExperimentResults):
             circle = plt.Circle(center, radius, fill=False, color="r", label="estimated search pattern")
             ax.add_patch(circle)
             ax.plot(center[0], center[1], '*', label="search pattern center")
+
+        if decode and "memory" in self.recordings:
+            memory_headings = self.memory_headings()
+            nth = 50
+            ax.quiver(
+                path[1::nth,0],
+                path[1::nth,1],
+                np.sin(memory_headings[::nth]),
+                np.cos(memory_headings[::nth]),
+                scale=10,
+                width=0.003,
+            )
+            #readout_headings = self.readout_headings()
+            #ax.quiver(
+            #    path[1::nth,0],
+            #    path[1::nth,1],
+            #    np.sin(readout_headings[::nth]),
+            #    np.cos(readout_headings[::nth]),
+            #    scale=10,
+            #    width=0.003,
+            #    color="green"
+            #)
 
         ax.plot(0, 0, "*")
 
