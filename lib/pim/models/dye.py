@@ -1,3 +1,4 @@
+from enum import Enum
 import numpy as np
 from pim.models.weights.shift import motor_output_theoretical
 
@@ -79,8 +80,13 @@ class SimpleDyeLayer(DyeLayer):
     def update_weights(self, inputs: Output, dt: float):
         self.weights += -self.backreaction_rate*dt + self.gain*inputs*dt
 
+class DyeReadout(Enum):
+    WEIGHT = 1
+    TRANSMITTANCE = 2
+    CONCENTRATION = 3
+
 class AdvancedDyeLayer(DyeLayer):
-    def __init__(self, epsilon, length, k, phi, c_tot, volume, wavelength, W_max):
+    def __init__(self, epsilon, length, k, phi, c_tot, volume, wavelength, W_max, readout: DyeReadout, model_transmittance):
         self.epsilon = epsilon
         self.length = length
         self.k = k
@@ -90,14 +96,21 @@ class AdvancedDyeLayer(DyeLayer):
         self.c_tot = c_tot
         self.initialize(0.0)
 
+        self.model_transmittance = model_transmittance
+        self.readout = readout
+
         super().__init__()
 
     def internal(self):
         return self.last_c
 
     def transmittance(self, c):
-        A = self.epsilon * self.length * (self.c_tot - c)
-        return 10 ** -A
+        """The transmittance corresponds to the weight of the synapse."""
+        if self.model_transmittance:
+            A = self.epsilon * self.length * (self.c_tot - c)
+            return 10 ** -A
+        else:
+            return c
 
     def dcdt(self, u):
         def f(t, c):
@@ -120,50 +133,13 @@ class AdvancedDyeLayer(DyeLayer):
 
         return T, Y
 
-# Not actulaly a dye layer, or even weight based, but it fits in the framework:
-class NonLinearMemoryLayer(DyeLayer):
-    def __init__(self, k, phi, epsilon_l=1.0, model_transmittance=False):
-        self.k = k
-        self.phi = phi
-        self.epsilon_l = epsilon_l
-        self.model_transmittance = model_transmittance
-        self.initialize(0.0)
-
-        super().__init__()
-
-    def internal(self):
-        return self.last_c
-
-    def transmittance(self, c):
-        if self.model_transmittance:
-            A = self.epsilon_l * (0.3 - c)
-            return 10 ** -A
-        else:
-            return c
-
-    def dcdt(self, u):
-        def f(t, c):
-            T = self.transmittance(c)
-            return -self.k * c + u * (1 - T) * self.phi
-        return f
-
-    def stable_point(self, u):
-        from scipy.optimize import root_scalar
-        roots = root_scalar(lambda c: self.dcdt(u)(0, c), bracket=[0, 1])
-        return roots.root
-
-    def initialize(self, c0):
-        self.last_c = np.ones(16) * c0
-
-    def update_weights(self, inputs: Output, dt: float):
-        dcdt  = self.dcdt(inputs)
-        self.last_c, T, Y = pim.math.step_ode(dcdt, self.last_c, dt)
-        self.weights = self.transmittance(self.last_c)
-
-        return T, Y
-
     def output(self, network: Network) -> Output:
-        return self.last_c
+        if self.readout == DyeReadout.WEIGHT:
+            return network.output("CPU4") * self.weights
+        elif self.readout == DyeReadout.TRANSMITTANCE:
+            return self.transmittance(self.last_c)
+        else: # CONCENTRATION
+            return self.last_c / self.c_tot
 
 
 def build_dye_network(params) -> Network:
@@ -186,21 +162,21 @@ def build_dye_network(params) -> Network:
     noise = params.get("noise", 0.1)
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
 
-    if params.get("integration_only", False):
-        dye = NonLinearMemoryLayer(
-            k, phi, epsilon_l = epsilon * length, model_transmittance=params.get("model_transmittance", False)
-        )
-    else:
-        dye = AdvancedDyeLayer(
-            epsilon = epsilon, 
-            length = length, 
-            k = k, 
-            phi = phi,
-            c_tot = c_tot,
-            volume = volume,
-            wavelength = wavelength,
-            W_max = W_max
-        )
+    readout = DyeReadout[params.get("readout", "WEIGHT")]
+    model_transmittance = params.get("model_transmittance", True)
+
+    dye = AdvancedDyeLayer(
+        epsilon = epsilon, 
+        length = length, 
+        k = k, 
+        phi = phi,
+        c_tot = c_tot,
+        volume = volume,
+        wavelength = wavelength,
+        W_max = W_max,
+        model_transmittance = model_transmittance,
+        readout = readout,
+    )
 
     if params.get("start_at_stable", False):
         stable_point = dye.stable_point(beta)

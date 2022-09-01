@@ -233,8 +233,12 @@ class SimulationResults(ExperimentResults):
         #    )
 
         fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 20))
+        fig.suptitle(self.name.split(".")[0])
+
         ax1.set_aspect(1)
         self.plot_path(ax1, decode=decode)
+        ax1.set_xlabel("x (steps)")
+        ax1.set_ylabel("y (steps)")
         ax1.legend()
 
         x, y1, y2, y3 = self.homing_tortuosity()
@@ -248,7 +252,12 @@ class SimulationResults(ExperimentResults):
 
         if "memory" in self.recordings:
             ax3.plot(self.recordings["memory"]["internal"])
+            ax3.set_xlabel("time (steps)")
+            ax3.set_ylabel("concentration (M)")
+
             ax4.plot(self.recordings["memory"]["output"])
+            ax4.set_xlabel("time (steps)")
+            ax4.set_ylabel("PFN post-synaptic activity")
 
         plt.show()
 
