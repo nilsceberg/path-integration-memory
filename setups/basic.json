@@ -1,6 +1,7 @@
 {
     "experiments": {
         "stone": {
+            "comment": "The theoretical 'basic' model from the Stone paper",
             "type": "simulation",
             "T_outbound": 1500,
             "T_inbound": 1500,

@@ -2,17 +2,17 @@
     "threads": 4,
     "experiments": {
         "dye": {
-            "comment": "Best dye model so far; can be used as control/benchmark for improvements.",
             "N": 100,
             "type": "simulation",
-            "T_outbound":1500,
-            "T_inbound": 1500,
-            "min_homing_distance": 0,
+            "T_outbound": 4000,
+            "T_inbound": 0,
+            "min_homing_distance": 300,
             "motor_factor": -0.5,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
+                    "cheat": false,
                     "noise": 0.1,
                     "mem_initial": 0.0,
                     "pfn_weight_factor": 1,

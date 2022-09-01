@@ -1,8 +1,8 @@
 {
     "comment": "for producing plots for presentations",
-    "threads": 8,
+    "threads": 1,
     "experiments": {
-        "direct-readout": {
+        "concentration-readout": {
             "N": 1,
             "seed": 42,
             "type": "simulation",
@@ -11,6 +11,7 @@
             "T_inbound": 1500,
             "min_homing_distance": 300,
             "motor_factor": -0.5,
+            "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -18,16 +19,18 @@
                     "cheat": false,
                     "noise": 0.1,
                     "mem_initial": 0.0,
-                    "integration_only": true,
-                    "model_transmittance": true,
+                    "readout": "CONCENTRATION",
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
+                    "epsilon": 100,
+                    "length": 1,
+                    "c_tot": 0.3,
                     "start_at_stable": false
                 }
             }
         },
-        "direct-readout-cheat": {
+        "concentration-readout-cheat": {
             "N": 1,
             "seed": 42,
             "type": "simulation",
@@ -36,6 +39,7 @@
             "T_inbound": 1500,
             "min_homing_distance": 300,
             "motor_factor": 0.5,
+            "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -43,11 +47,13 @@
                     "cheat": true,
                     "noise": 0.1,
                     "mem_initial": 0.0,
-                    "integration_only": true,
-                    "model_transmittance": true,
+                    "readout": "CONCENTRATION",
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
+                    "epsilon": 100,
+                    "length": 1,
+                    "c_tot": 0.3,
                     "start_at_stable": false
                 }
             }
@@ -61,6 +67,7 @@
             "T_inbound": 1500,
             "min_homing_distance": 300,
             "motor_factor": -0.5,
+            "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -68,7 +75,7 @@
                     "cheat": false,
                     "noise": 0.1,
                     "mem_initial": 0.0,
-                    "integration_only": false,
+                    "readout": "WEIGHT",
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,
@@ -88,6 +95,7 @@
             "T_inbound": 1500,
             "min_homing_distance": 300,
             "motor_factor": 0.5,
+            "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -95,7 +103,7 @@
                     "cheat": true,
                     "noise": 0.1,
                     "mem_initial": 0.0,
-                    "integration_only": false,
+                    "readout": "WEIGHT",
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0.0,

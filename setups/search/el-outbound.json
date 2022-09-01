@@ -10,6 +10,7 @@
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "motor_factor": -0.5,
+            "record": 
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
