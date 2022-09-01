@@ -231,10 +231,20 @@ class SimulationResults(ExperimentResults):
         #    quiver_color = "black",
         #    )
 
-        plt.figure(figsize=(10, 10))
-        ax = plt.axes()
-        ax.set_aspect(1)
-        self.plot_path(ax)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 10))
+        ax1.set_aspect(1)
+        self.plot_path(ax1)
+        ax1.legend()
+
+        x, y1, y2, y3 = self.homing_tortuosity()
+
+        ax2.plot(100*x, 100*y1, "--", label="distance from home", color="lightblue")
+        ax2.plot(100*x, 100*y2, label="best distance from home", color="blue")
+        ax2.plot(100*x, 100*y3, label="optimal", color="orange")
+        ax2.set_xlabel("% of optimal homing time")
+        ax2.set_ylabel("% of homing distance remaining")
+        ax2.legend()
+
         plt.show()
 
     def serialize(self):
@@ -293,8 +303,18 @@ class SimulationResults(ExperimentResults):
         return center, farthest_position(pattern - center)
 
     def homing_tortuosity(self):
-        #homing_displacement =  - self.homing_position()
-        return 0 #np.
+        inbound_path = self.reconstruct_path()[self.parameters["T_outbound"]:]
+        T = np.arange(0, len(inbound_path))
+
+        turning_point_distance = np.linalg.norm(inbound_path[0])
+        average_homing_speed = np.mean(np.linalg.norm(self.velocities[self.parameters["T_outbound"]:], axis=1))
+        distance_from_home = np.linalg.norm(inbound_path, axis=1)
+        straight_line_distance = T * average_homing_speed
+        optimal_distance_from_home = np.maximum(0, turning_point_distance - straight_line_distance)
+        optimal_homing_time = turning_point_distance / average_homing_speed
+
+        return T / optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
+
 
     def plot_path(self, ax, search_pattern=True):
         T_in = self.parameters["T_inbound"]
@@ -309,9 +329,9 @@ class SimulationResults(ExperimentResults):
 
         if search_pattern:
             center, radius = self.search_pattern()
-            ax.plot(center[0], center[1], '*', label="search pattern center")
-            circle = plt.Circle(center, radius, fill=False, color="r")
+            circle = plt.Circle(center, radius, fill=False, color="r", label="estimated search pattern")
             ax.add_patch(circle)
+            ax.plot(center[0], center[1], '*', label="search pattern center")
 
         ax.plot(0, 0, "*")
 
