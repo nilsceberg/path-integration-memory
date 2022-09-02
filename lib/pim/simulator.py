@@ -152,10 +152,10 @@ def path_center_of_mass(path):
     return np.mean(path, axis=0)
 
 def estimate_search_pattern(path, tol = 0.05):
-    # Consider a shrinking averaging window computing the "center of mass"
-    # of the path;
+    # Consider a (from the end) growing averaging window computing
+    # the "center of mass" of the path;
     # when the CoM moves less than some tolerance level
-    # for convergence, we have reached the search pattern.
+    # for convergence, we have included the entire search pattern.
     pattern = path
     com = path_center_of_mass(pattern)
 
