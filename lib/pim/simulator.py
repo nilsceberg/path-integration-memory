@@ -236,28 +236,32 @@ class SimulationResults(ExperimentResults):
         fig.suptitle(self.name.split(".")[0])
 
         ax1.set_aspect(1)
-        self.plot_path(ax1, decode=decode)
+        self.plot_path(ax1, decode=True)
         ax1.set_xlabel("x (steps)")
         ax1.set_ylabel("y (steps)")
-        ax1.legend()
+        #ax1.legend()
 
-        x, y1, y2, y3 = self.homing_tortuosity()
+        T_total = self.parameters["T_outbound"] + self.parameters["T_inbound"]
+        T, optimal_time, y1, y2, y3 = self.homing_tortuosity()
 
-        ax2.plot(100*x, 100*y1, "--", label="distance from home", color="lightblue")
-        ax2.plot(100*x, 100*y2, label="best distance from home", color="blue")
-        ax2.plot(100*x, 100*y3, label="optimal", color="orange")
-        ax2.set_xlabel("% of optimal homing time")
+        ax2.plot(T + self.parameters["T_outbound"], 100*y1, "--", label="distance from home", color="lightblue")
+        ax2.plot(T + self.parameters["T_outbound"], 100*y2, label="best distance from home", color="blue")
+        ax2.plot(T + self.parameters["T_outbound"], 100*y3, label="optimal", color="orange")
+        ax2.set_xlabel("time (steps)")
         ax2.set_ylabel("% of homing distance remaining")
+        ax2.set_xlim(0, T_total)
         ax2.legend()
 
         if "memory" in self.recordings:
-            ax3.plot(self.recordings["memory"]["internal"])
+            ax3.plot(self.concentrations())
             ax3.set_xlabel("time (steps)")
             ax3.set_ylabel("concentration (M)")
+            ax3.set_xlim(0, T_total)
 
-            ax4.plot(self.recordings["memory"]["output"])
+            ax4.plot(self.transmittances() * 100)
             ax4.set_xlabel("time (steps)")
-            ax4.set_ylabel("PFN post-synaptic activity")
+            ax4.set_ylabel("% transmittance")
+            ax4.set_xlim(0, T_total)
 
         plt.show()
 
@@ -287,8 +291,17 @@ class SimulationResults(ExperimentResults):
     def homing_position(self):
         return self.reconstruct_path()[self.parameters["T_outbound"]]
 
+    def concentrations(self):
+        return np.array(self.recordings["memory"]["internal"])[:,0]
+
+    def transmittances(self):
+        return np.array(self.recordings["memory"]["internal"])[:,1]
+
+    def memory(self):
+        return self.transmittances()
+
     def memory_headings(self):
-        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
+        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.memory()]
 
     def readout_headings(self):
         return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["output"]]
@@ -334,7 +347,7 @@ class SimulationResults(ExperimentResults):
         optimal_distance_from_home = np.maximum(0, turning_point_distance - straight_line_distance)
         optimal_homing_time = turning_point_distance / average_homing_speed
 
-        return T / optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
+        return T, optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
 
 
     def plot_path(self, ax, search_pattern=True, decode=False):

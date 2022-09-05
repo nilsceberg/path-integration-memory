@@ -1,13 +1,14 @@
 {
-    "threads": 4,
+    "threads": 1,
     "experiments": {
         "dye": {
             "N": 100,
             "type": "simulation",
-            "T_outbound": 4000,
-            "T_inbound": 0,
-            "min_homing_distance": 300,
+            "T_outbound": 1500,
+            "T_inbound": 1500,
             "motor_factor": -0.5,
+            "min_homing_distance": 300,
+            "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -16,11 +17,13 @@
                     "noise": 0.1,
                     "mem_initial": 0.0,
                     "pfn_weight_factor": 1,
-                    "phi": 0.00045,
-                    "beta": 0.1,
+                    "model_transmittance": true,
+                    "readout": "TRANSMITTANCE_WEIGHT",
+                    "phi": 0.00035,
+                    "beta": 0.15,
                     "k": 0,
-                    "epsilon": 1e4,
-                    "length": 1e-3,
+                    "epsilon": 20,
+                    "length": 1,
                     "c_tot": 0.3,
                     "start_at_stable": false
                 }

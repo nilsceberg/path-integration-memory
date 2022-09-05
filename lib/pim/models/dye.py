@@ -81,9 +81,10 @@ class SimpleDyeLayer(DyeLayer):
         self.weights += -self.backreaction_rate*dt + self.gain*inputs*dt
 
 class DyeReadout(Enum):
-    WEIGHT = 1
-    TRANSMITTANCE = 2
-    CONCENTRATION = 3
+    TRANSMITTANCE_WEIGHT = 1
+    CONCENTRATION_WEIGHT = 2
+    TRANSMITTANCE = 3
+    CONCENTRATION = 4
 
 class AdvancedDyeLayer(DyeLayer):
     def __init__(self, epsilon, length, k, phi, c_tot, volume, wavelength, W_max, readout: DyeReadout, model_transmittance):
@@ -102,7 +103,7 @@ class AdvancedDyeLayer(DyeLayer):
         super().__init__()
 
     def internal(self):
-        return self.last_c
+        return [self.last_c, self.transmittance(self.last_c)]
 
     def transmittance(self, c):
         """The transmittance corresponds to the weight of the synapse."""
@@ -110,7 +111,10 @@ class AdvancedDyeLayer(DyeLayer):
             A = self.epsilon * self.length * (self.c_tot - c)
             return 10 ** -A
         else:
-            return c
+            #import scipy.special
+            #return 1-scipy.special.expit(-10 * (c / self.c_tot - 0.5))
+            #return np.sin((c / self.c_tot)*np.pi*3 + np.pi)*0.4 + 0.4
+            return c / self.c_tot
 
     def dcdt(self, u):
         def f(t, c):
@@ -129,17 +133,21 @@ class AdvancedDyeLayer(DyeLayer):
     def update_weights(self, inputs: Output, dt: float):
         dcdt  = self.dcdt(inputs)
         self.last_c, T, Y = pim.math.step_ode(dcdt, self.last_c, dt)
-        self.weights = self.transmittance(self.last_c)
+
+        if self.readout == DyeReadout.CONCENTRATION_WEIGHT:
+            self.weights = self.last_c / self.c_tot
+        elif self.readout == DyeReadout.TRANSMITTANCE_WEIGHT:
+            self.weights = self.transmittance(self.last_c)
 
         return T, Y
 
     def output(self, network: Network) -> Output:
-        if self.readout == DyeReadout.WEIGHT:
-            return network.output("CPU4") * self.weights
-        elif self.readout == DyeReadout.TRANSMITTANCE:
+        if self.readout == DyeReadout.TRANSMITTANCE:
             return self.transmittance(self.last_c)
-        else: # CONCENTRATION
+        elif self.readout == DyeReadout.CONCENTRATION:
             return self.last_c / self.c_tot
+        else: # *_WEIGHT
+            return network.output("CPU4") * self.weights
 
 
 def build_dye_network(params) -> Network:
@@ -162,7 +170,7 @@ def build_dye_network(params) -> Network:
     noise = params.get("noise", 0.1)
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
 
-    readout = DyeReadout[params.get("readout", "WEIGHT")]
+    readout = DyeReadout[params.get("readout", "TRANSMITTANCE_WEIGHT")]
     model_transmittance = params.get("model_transmittance", True)
 
     dye = AdvancedDyeLayer(
