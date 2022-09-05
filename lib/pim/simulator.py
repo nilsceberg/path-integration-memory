@@ -232,7 +232,7 @@ class SimulationResults(ExperimentResults):
         #    quiver_color = "black",
         #    )
 
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 20))
+        fig, ((ax1, ax2, ax5), (ax3, ax4, ax6)) = plt.subplots(2, 3, figsize=(20, 20))
         fig.suptitle(self.name.split(".")[0])
 
         ax1.set_aspect(1)
@@ -262,6 +262,14 @@ class SimulationResults(ExperimentResults):
             ax4.set_xlabel("time (steps)")
             ax4.set_ylabel("% transmittance")
             ax4.set_xlim(0, T_total)
+
+            max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
+            max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
+            ax5.set_xlim(0, T_total)
+            ax5.plot(max_delta_c, "--", label=r"$max \Delta c$")
+            ax5.plot(max_delta_T, "--", label=r"$max \Delta T$")
+            #ax5.plot(max_delta_T / max_delta_c, label="amplification")
+            ax5.legend()
 
         plt.show()
 

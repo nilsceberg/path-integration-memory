@@ -19,10 +19,10 @@
                     "pfn_weight_factor": 1,
                     "model_transmittance": true,
                     "readout": "TRANSMITTANCE_WEIGHT",
-                    "phi": 0.00035,
+                    "phi": 0.00045,
                     "beta": 0.15,
                     "k": 0,
-                    "epsilon": 20,
+                    "epsilon": 25,
                     "length": 1,
                     "c_tot": 0.3,
                     "start_at_stable": false
