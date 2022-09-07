@@ -1,0 +1,31 @@
+{
+    "threads": 1,
+    "experiments": {
+        "dye": {
+            "comment": "Unified outbound and inbound behaviour",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": 1,
+            "T_inbound": 3000,
+            "min_homing_distance": 0,
+            "motor_factor": 0.5,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "cheat": true,
+                    "noise": 0.1,
+                    "mem_initial": 0.0,
+                    "phi": 0.00055,
+                    "beta": 0.05,
+                    "k": 0,
+                    "epsilon": 20,
+                    "length": 1,
+                    "c_tot": 0.3,
+                    "start_at_stable": false
+                }
+            }
+        }
+    }
+}

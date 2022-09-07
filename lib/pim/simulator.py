@@ -271,6 +271,12 @@ class SimulationResults(ExperimentResults):
             #ax5.plot(max_delta_T / max_delta_c, label="amplification")
             ax5.legend()
 
+            ax6.set_xlim(0, T_total)
+            ax6.plot(self.distances())
+            ax6.set_xlabel("time (steps)")
+            ax6.set_ylabel("distance from home (steps)")
+            ax6.legend()
+
         plt.show()
 
     def serialize(self):
@@ -322,9 +328,11 @@ class SimulationResults(ExperimentResults):
         decoded_angles = self.memory_headings()
         return angular_distance(angles[1:], decoded_angles[:])
 
+    def distances(self):
+        return np.linalg.norm(self.reconstruct_path(), axis=1)
+
     def memory_error(self):
-        path = self.reconstruct_path()
-        distances = np.linalg.norm(path,axis=1)
+        distances = self.distances()
         alpha = np.abs(self.angular_error())
         return [d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)]
 
