@@ -220,7 +220,7 @@ class SimulationResults(ExperimentResults):
 
         self._cached_path = None
 
-    def report(self, decode=False):
+    def report(self, emergent_exploration=True, decode=False):
         logger.info("plotting route")
         #fig, ax = plotter.plot_route(
         #    h = self.headings,
@@ -232,11 +232,23 @@ class SimulationResults(ExperimentResults):
         #    quiver_color = "black",
         #    )
 
+        max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
+        max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
+
+        # Homing becomes "activated" when max_delta_T crosses a small threshold of 0.01 or so; identify that point
+        delta_T_threshold = 0.025
+        if emergent_exploration:
+            #T_outbound = np.where(max_delta_T > delta_T_threshold)[0][0]
+            T_outbound = np.where(max_delta_T * max_delta_c > delta_T_threshold / 100)[0][0]
+        else:
+            T_outbound = self.parameters["T_outbound"]
+
+
         fig, ((ax1, ax2, ax5), (ax3, ax4, ax6)) = plt.subplots(2, 3, figsize=(20, 20))
         fig.suptitle(self.name.split(".")[0])
 
         ax1.set_aspect(1)
-        self.plot_path(ax1, decode=True)
+        self.plot_path(ax1, decode=True, override_outbound = T_outbound)
         ax1.set_xlabel("x (steps)")
         ax1.set_ylabel("y (steps)")
         #ax1.legend()
@@ -263,11 +275,11 @@ class SimulationResults(ExperimentResults):
             ax4.set_ylabel("% transmittance")
             ax4.set_xlim(0, T_total)
 
-            max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
-            max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
             ax5.set_xlim(0, T_total)
             ax5.plot(max_delta_c, "--", label=r"$max \Delta c$")
             ax5.plot(max_delta_T, "--", label=r"$max \Delta T$")
+            ax5.plot(max_delta_c * max_delta_T * 100, "--", label=r"product")
+            ax5.plot([0, T_total], [delta_T_threshold]*2, '-')
             #ax5.plot(max_delta_T / max_delta_c, label="amplification")
             ax5.legend()
 
@@ -366,9 +378,9 @@ class SimulationResults(ExperimentResults):
         return T, optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
 
 
-    def plot_path(self, ax, search_pattern=True, decode=False):
+    def plot_path(self, ax, search_pattern=True, decode=False, override_outbound = None):
         T_in = self.parameters["T_inbound"]
-        T_out = self.parameters["T_outbound"]
+        T_out = override_outbound if override_outbound is not None else self.parameters["T_outbound"]
         path = np.array(self.reconstruct_path())
 
         ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")
