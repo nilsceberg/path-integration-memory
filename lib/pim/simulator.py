@@ -150,10 +150,10 @@ def path_center_of_mass(path):
     return np.mean(path, axis=0)
 
 def estimate_search_pattern(path, tol = 0.05):
-    # Consider a shrinking averaging window computing the "center of mass"
-    # of the path;
+    # Consider a (from the end) growing averaging window computing
+    # the "center of mass" of the path;
     # when the CoM moves less than some tolerance level
-    # for convergence, we have reached the search pattern.
+    # for convergence, we have included the entire search pattern.
     pattern = path
     com = path_center_of_mass(pattern)
 
@@ -218,7 +218,7 @@ class SimulationResults(ExperimentResults):
 
         self._cached_path = None
 
-    def report(self, decode=False):
+    def report(self, emergent_exploration=True, decode=False):
         logger.info("plotting route")
         #fig, ax = plotter.plot_route(
         #    h = self.headings,
@@ -230,32 +230,62 @@ class SimulationResults(ExperimentResults):
         #    quiver_color = "black",
         #    )
 
-        fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(20, 20))
+        max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
+        max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
+
+        # Homing becomes "activated" when max_delta_T crosses a small threshold of 0.01 or so; identify that point
+        delta_T_threshold = 0.025
+        if emergent_exploration:
+            #T_outbound = np.where(max_delta_T > delta_T_threshold)[0][0]
+            T_outbound = np.where(max_delta_T * max_delta_c > delta_T_threshold / 100)[0][0]
+        else:
+            T_outbound = self.parameters["T_outbound"]
+
+
+        fig, ((ax1, ax2, ax5), (ax3, ax4, ax6)) = plt.subplots(2, 3, figsize=(20, 20))
         fig.suptitle(self.name.split(".")[0])
 
         ax1.set_aspect(1)
-        self.plot_path(ax1, decode=decode)
+        self.plot_path(ax1, decode=True, override_outbound = T_outbound)
         ax1.set_xlabel("x (steps)")
         ax1.set_ylabel("y (steps)")
-        ax1.legend()
+        #ax1.legend()
 
-        x, y1, y2, y3 = self.homing_tortuosity()
+        T_total = self.parameters["T_outbound"] + self.parameters["T_inbound"]
+        T, optimal_time, y1, y2, y3 = self.homing_tortuosity()
 
-        ax2.plot(100*x, 100*y1, "--", label="distance from home", color="lightblue")
-        ax2.plot(100*x, 100*y2, label="best distance from home", color="blue")
-        ax2.plot(100*x, 100*y3, label="optimal", color="orange")
-        ax2.set_xlabel("% of optimal homing time")
+        ax2.plot(T + self.parameters["T_outbound"], 100*y1, "--", label="distance from home", color="lightblue")
+        ax2.plot(T + self.parameters["T_outbound"], 100*y2, label="best distance from home", color="blue")
+        ax2.plot(T + self.parameters["T_outbound"], 100*y3, label="optimal", color="orange")
+        ax2.set_xlabel("time (steps)")
         ax2.set_ylabel("% of homing distance remaining")
+        ax2.set_xlim(0, T_total)
         ax2.legend()
 
         if "memory" in self.recordings:
-            ax3.plot(self.recordings["memory"]["internal"])
+            ax3.plot(self.concentrations())
             ax3.set_xlabel("time (steps)")
             ax3.set_ylabel("concentration (M)")
+            ax3.set_xlim(0, T_total)
 
-            ax4.plot(self.recordings["memory"]["output"])
+            ax4.plot(self.transmittances() * 100)
             ax4.set_xlabel("time (steps)")
-            ax4.set_ylabel("PFN post-synaptic activity")
+            ax4.set_ylabel("% transmittance")
+            ax4.set_xlim(0, T_total)
+
+            ax5.set_xlim(0, T_total)
+            ax5.plot(max_delta_c, "--", label=r"$max \Delta c$")
+            ax5.plot(max_delta_T, "--", label=r"$max \Delta T$")
+            ax5.plot(max_delta_c * max_delta_T * 100, "--", label=r"product")
+            ax5.plot([0, T_total], [delta_T_threshold]*2, '-')
+            #ax5.plot(max_delta_T / max_delta_c, label="amplification")
+            ax5.legend()
+
+            ax6.set_xlim(0, T_total)
+            ax6.plot(self.distances())
+            ax6.set_xlabel("time (steps)")
+            ax6.set_ylabel("distance from home (steps)")
+            ax6.legend()
 
         plt.show()
 
@@ -285,8 +315,17 @@ class SimulationResults(ExperimentResults):
     def homing_position(self):
         return self.reconstruct_path()[self.parameters["T_outbound"]]
 
+    def concentrations(self):
+        return np.array(self.recordings["memory"]["internal"])[:,0]
+
+    def transmittances(self):
+        return np.array(self.recordings["memory"]["internal"])[:,1]
+
+    def memory(self):
+        return self.transmittances()
+
     def memory_headings(self):
-        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["internal"]]
+        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.memory()]
 
     def readout_headings(self):
         return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["output"]]
@@ -299,9 +338,11 @@ class SimulationResults(ExperimentResults):
         decoded_angles = self.memory_headings()
         return angular_distance(angles[1:], decoded_angles[:])
 
+    def distances(self):
+        return np.linalg.norm(self.reconstruct_path(), axis=1)
+
     def memory_error(self):
-        path = self.reconstruct_path()
-        distances = np.linalg.norm(path,axis=1)
+        distances = self.distances()
         alpha = np.abs(self.angular_error())
         return [d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)]
 
@@ -332,12 +373,12 @@ class SimulationResults(ExperimentResults):
         optimal_distance_from_home = np.maximum(0, turning_point_distance - straight_line_distance)
         optimal_homing_time = turning_point_distance / average_homing_speed
 
-        return T / optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
+        return T, optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
 
 
-    def plot_path(self, ax, search_pattern=True, decode=False):
+    def plot_path(self, ax, search_pattern=True, decode=False, override_outbound = None):
         T_in = self.parameters["T_inbound"]
-        T_out = self.parameters["T_outbound"]
+        T_out = override_outbound if override_outbound is not None else self.parameters["T_outbound"]
         path = np.array(self.reconstruct_path())
 
         ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")
