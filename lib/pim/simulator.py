@@ -220,7 +220,28 @@ class SimulationResults(ExperimentResults):
 
         self._cached_path = None
 
-    def report(self, emergent_exploration=True, decode=False):
+        # Stuff computed based on parameters
+        self.emergent_exploration = self.parameters.get("emergent_exploration", False) # don't treat outbound and inbound paths as explicitly separate
+
+        if "memory" in self.recordings:
+            # Homing becomes "activated" when max_delta_T crosses a small threshold of 0.01 or so; identify that point
+            self.delta_T_threshold = 0.03
+
+            self.max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
+            self.max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
+
+        # The effective outbound time, either explicitly, or
+        # determined based on data
+        if self.emergent_exploration and "memory" in self.recordings:
+            #T_outbound = np.where(max_delta_T > delta_T_threshold)[0][0]
+            self.T_outbound = np.where(self.max_delta_T * self.max_delta_c > self.delta_T_threshold / 100)[0][0]
+            self.T_inbound = len(self.headings) - self.T_outbound
+        else:
+            self.T_outbound = self.parameters["T_outbound"]
+            self.T_inbound = self.parameters["T_inbound"]
+
+
+    def report(self, decode=False):
         logger.info("plotting route")
         #fig, ax = plotter.plot_route(
         #    h = self.headings,
@@ -232,33 +253,22 @@ class SimulationResults(ExperimentResults):
         #    quiver_color = "black",
         #    )
 
-        max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
-        max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
-
-        # Homing becomes "activated" when max_delta_T crosses a small threshold of 0.01 or so; identify that point
-        delta_T_threshold = 0.025
-        if emergent_exploration:
-            #T_outbound = np.where(max_delta_T > delta_T_threshold)[0][0]
-            T_outbound = np.where(max_delta_T * max_delta_c > delta_T_threshold / 100)[0][0]
-        else:
-            T_outbound = self.parameters["T_outbound"]
-
 
         fig, ((ax1, ax2, ax5), (ax3, ax4, ax6)) = plt.subplots(2, 3, figsize=(20, 20))
         fig.suptitle(self.name.split(".")[0])
 
         ax1.set_aspect(1)
-        self.plot_path(ax1, decode=True, override_outbound = T_outbound)
+        self.plot_path(ax1, decode=True)
         ax1.set_xlabel("x (steps)")
         ax1.set_ylabel("y (steps)")
         #ax1.legend()
 
-        T_total = self.parameters["T_outbound"] + self.parameters["T_inbound"]
+        T_total = len(self.reconstruct_path())
         T, optimal_time, y1, y2, y3 = self.homing_tortuosity()
 
-        ax2.plot(T + self.parameters["T_outbound"], 100*y1, "--", label="distance from home", color="lightblue")
-        ax2.plot(T + self.parameters["T_outbound"], 100*y2, label="best distance from home", color="blue")
-        ax2.plot(T + self.parameters["T_outbound"], 100*y3, label="optimal", color="orange")
+        ax2.plot(T + self.T_outbound, 100*y1, label="distance from home", color="blue")
+        ax2.plot(T + self.T_outbound, 100*y2, "--", label="best distance from home", color="lightblue")
+        ax2.plot(T + self.T_outbound, 100*y3, label="optimal", color="orange")
         ax2.set_xlabel("time (steps)")
         ax2.set_ylabel("% of homing distance remaining")
         ax2.set_xlim(0, T_total)
@@ -276,10 +286,10 @@ class SimulationResults(ExperimentResults):
             ax4.set_xlim(0, T_total)
 
             ax5.set_xlim(0, T_total)
-            ax5.plot(max_delta_c, "--", label=r"$max \Delta c$")
-            ax5.plot(max_delta_T, "--", label=r"$max \Delta T$")
-            ax5.plot(max_delta_c * max_delta_T * 100, "--", label=r"product")
-            ax5.plot([0, T_total], [delta_T_threshold]*2, '-')
+            ax5.plot(self.max_delta_c, "--", label=r"$max \Delta c$")
+            ax5.plot(self.max_delta_T, "--", label=r"$max \Delta T$")
+            ax5.plot(self.max_delta_c * self.max_delta_T * 100, "--", label=r"product")
+            ax5.plot([0, T_total], [self.delta_T_threshold]*2, '-')
             #ax5.plot(max_delta_T / max_delta_c, label="amplification")
             ax5.legend()
 
@@ -308,14 +318,14 @@ class SimulationResults(ExperimentResults):
 
     def closest_position(self):
         path = self.reconstruct_path()
-        return min(path[self.parameters["T_outbound"]:], key = np.linalg.norm)
+        return min(path[self.T_outbound:], key = np.linalg.norm)
 
     def farthest_position(self):
         path = self.reconstruct_path()
-        return max(path[self.parameters["T_outbound"]:], key = np.linalg.norm)
+        return max(path[self.T_outbound:], key = np.linalg.norm)
 
     def homing_position(self):
-        return self.reconstruct_path()[self.parameters["T_outbound"]]
+        return self.reconstruct_path()[self.T_outbound]
 
     def concentrations(self):
         return np.array(self.recordings["memory"]["internal"])[:,0]
@@ -357,19 +367,19 @@ class SimulationResults(ExperimentResults):
 
     def closest_position_timestep(self):
         path = self.reconstruct_path()
-        return min(range(self.parameters["T_outbound"], self.parameters["T_outbound"] + self.parameters["T_inbound"]), key = lambda i: np.linalg.norm(path[i]))
+        return min(range(self.T_outbound, self.T_outbound + self.T_inbound), key = lambda i: np.linalg.norm(path[i]))
     
     def search_pattern(self):
-        pattern = estimate_search_pattern(self.reconstruct_path()[self.parameters["T_outbound"]:], tol=0.05)
+        pattern = estimate_search_pattern(self.reconstruct_path()[self.T_outbound:], tol=0.05)
         center = path_center_of_mass(pattern)
         return center, farthest_position(pattern - center)
 
     def homing_tortuosity(self):
-        inbound_path = self.reconstruct_path()[self.parameters["T_outbound"]:]
+        inbound_path = self.reconstruct_path()[self.T_outbound:]
         T = np.arange(0, len(inbound_path))
 
         turning_point_distance = np.linalg.norm(inbound_path[0])
-        average_homing_speed = np.mean(np.linalg.norm(self.velocities[self.parameters["T_outbound"]:], axis=1))
+        average_homing_speed = np.mean(np.linalg.norm(self.velocities[self.T_outbound:], axis=1))
         distance_from_home = np.linalg.norm(inbound_path, axis=1)
         straight_line_distance = T * average_homing_speed
         optimal_distance_from_home = np.maximum(0, turning_point_distance - straight_line_distance)
@@ -378,9 +388,9 @@ class SimulationResults(ExperimentResults):
         return T, optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
 
 
-    def plot_path(self, ax, search_pattern=True, decode=False, override_outbound = None):
-        T_in = self.parameters["T_inbound"]
-        T_out = override_outbound if override_outbound is not None else self.parameters["T_outbound"]
+    def plot_path(self, ax, search_pattern=True, decode=False):
+        T_in = self.T_inbound
+        T_out = self.T_outbound
         path = np.array(self.reconstruct_path())
 
         ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")
