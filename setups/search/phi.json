@@ -9,7 +9,7 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": -0.5,
+            "motor_factor": -0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -35,7 +35,7 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": 0.5,
+            "motor_factor": 0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -61,7 +61,7 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": -0.5,
+            "motor_factor": -0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -87,7 +87,7 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": 0.5,
+            "motor_factor": 0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -112,7 +112,7 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": -0.5,
+            "motor_factor": -0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
@@ -137,7 +137,7 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": 0.5,
+            "motor_factor": 0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
