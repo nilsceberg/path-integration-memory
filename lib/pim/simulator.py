@@ -1,8 +1,6 @@
 """Experiments to reproduce results from Stone 2017."""
 
-from types import MemberDescriptorType
 from typing import List, Tuple
-from flask import current_app
 from loguru import logger
 import numpy as np
 import matplotlib.pyplot as plt
@@ -376,6 +374,15 @@ class SimulationResults(ExperimentResults):
             #    color="green"
             #)
 
+        # ax.quiver(
+        #     path[1:1500:50,0],
+        #     path[1:1500:50,1],
+        #     np.sin(self.headings[1:1500:50]),
+        #     np.cos(self.headings[1:1500:50]),
+        #     scale=10,
+        #     width=0.003,
+        # )
+
         ax.plot(0, 0, "*")
 
 
@@ -425,7 +432,7 @@ class SimulationExperiment(Experiment):
             logger.info("generating outbound path")
 
             path = self.parameters.get("path", "random")
-            if path == "random": 
+            if isinstance(path, str) and path == "random": 
                 T_outbound = self.parameters["T_outbound"]
                 T_inbound = self.parameters["T_inbound"]
                 headings = np.zeros(T_outbound + T_inbound)
@@ -446,7 +453,15 @@ class SimulationExperiment(Experiment):
                 headings = np.hstack([headings, np.zeros(T_inbound)])
                 velocities = np.vstack([velocities, np.zeros((T_inbound, 2))])
             else:
-                raise RuntimeError(f"unkonown path type {str(type(path))}")
+                raise RuntimeError(f"unknown path type {str(type(path))}")
+
+            heading = self.parameters.get("heading")
+            if heading == "random_bounded":
+                headings += np.hstack([np.random.rand(T_outbound)*1-0.5, np.zeros(T_inbound)])
+            elif heading == "random":
+                headings = np.hstack([np.random.rand(T_outbound)*2*np.pi, np.zeros(T_inbound)])
+            elif isinstance(heading, int) or isinstance(heading, float):
+                headings = np.hstack([np.ones(T_outbound)*heading, np.zeros(T_inbound)])
 
             logger.info("simulating outbound path")
             dt = 1.0 / time_subdivision
@@ -463,6 +478,18 @@ class SimulationExperiment(Experiment):
                     motor = self.cx.update(dt, heading, velocity)
                     rotation = motor * self.parameters.get("motor_factor", 1.0)
 
+                    # if t >= T_outbound + 100 and t <= T_outbound + 300:
+                    #     heading = np.pi
+                    #     rotation = 0
+
+                    # if t >= T_outbound + 500 and t <= T_outbound + 600:
+                    #     heading = 0
+                    #     rotation = 0
+
+                    # if t >= T_outbound + 650 and t <= T_outbound + 850:
+                    #     heading = np.pi
+                    #     rotation = 0
+
                     heading, velocity = get_next_state(
                         dt=dt,
                         velocity=velocity,
@@ -474,6 +501,8 @@ class SimulationExperiment(Experiment):
 
                 headings[t], velocities[t,:] = heading, velocity
                 self._record()
+
+            self.headings = headings
 
         return SimulationResults(name, config_id, self.parameters, headings, velocities, recordings = self.recordings)
 
