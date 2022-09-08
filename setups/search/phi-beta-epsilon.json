@@ -7,14 +7,14 @@
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": -0.5,
+            "motor_factor": -0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
-		    "cheat": false,
-		    "integration_only": false,
-		    "start_at_stable": false,
+                    "cheat": false,
+                    "integration_only": false,
+                    "start_at_stable": false,
                     "noise": 0.1,
                     "mem_initial": 0.0,
                     "pfn_weight_factor": 1,

@@ -8,7 +8,7 @@
             "T_inbound":1500,
             "T_outbound": { "range": [100, 4100, 200] },
             "min_homing_distance": 0,
-            "motor_factor": 0.5,
+            "motor_factor": 0.3,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
