@@ -180,7 +180,7 @@ def tl2_output(noise):
     """Just a dot product with preferred angle and current heading""" # bad description
     def f(inputs):
         theta, = inputs
-        output = np.cos(-theta - tl2_prefs)
+        output = np.cos(theta - tl2_prefs)
         return noisy_sigmoid(output, tl2_slope_tuned, tl2_bias_tuned, noise)
     return f
 
@@ -253,7 +253,7 @@ def motor_output(noise):
         motor = np.dot(W_CPU1a_motor, cpu1a)
         motor += np.dot(W_CPU1b_motor, cpu1b)
         output = (motor[0] - motor[1]) * 0.25  # To kill the noise a bit!
-        return -output
+        return output
     return f
 
 def pontine_output(noise):
@@ -342,7 +342,7 @@ def build_network(params, CPU4LayerClass = CPU4Layer) -> Network:
         ),
         "CPU1b": FunctionLayer(
             inputs = ["TB1", "memory"],
-            function = cpu1a_output(noise),
+            function = cpu1b_output(noise),
             initial = np.zeros(N_CPU1A)
         ),
         "motor": FunctionLayer(
