@@ -7,12 +7,12 @@ from .constants import *
 def cl1_output(inputs):
     "Invert compass"
     tl2, = inputs
-    return -tl2
+    return tl2 + np.pi
 
 def tb1_output(inputs):
     """Sinusoidal response to solar compass."""
     cl1, tb1 = inputs
-    return (1.0 + np.cos(np.pi + column_angles + cl1)) / 2.0
+    return (1.0 + np.cos(cl1 - column_angles)) / 2.0
 
 def tn1_output(inputs):
     """Linearly inverse sensitive to forwards and backwards motion."""
