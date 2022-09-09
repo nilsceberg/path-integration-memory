@@ -1,13 +1,18 @@
+from pyclbr import Function
 import numpy as np
 
 from ..network import InputLayer, Network, Output, RecurrentForwardNetwork, FunctionLayer, IdentityLayer, Layer
 from .constants import *
 
+def cl1_output(inputs):
+    "Invert compass"
+    tl2, = inputs
+    return -tl2
 
 def tb1_output(inputs):
     """Sinusoidal response to solar compass."""
-    theta, tb1 = inputs
-    return (1.0 + np.cos(np.pi + column_angles + theta)) / 2.0
+    cl1, tb1 = inputs
+    return (1.0 + np.cos(np.pi + column_angles + cl1)) / 2.0
 
 def tn1_output(inputs):
     """Linearly inverse sensitive to forwards and backwards motion."""
@@ -73,7 +78,7 @@ def motor_output(inputs):
     cpu1_reshaped = cpu1.reshape(2, -1)
     motor_lr = np.sum(cpu1_reshaped, axis=1)
     # We need to add some randomness, otherwise agent infinitely overshoots
-    motor = (motor_lr[1] - motor_lr[0])
+    motor = (motor_lr[0] - motor_lr[1])
     if random_std > 0.0:
         motor += np.random.normal(0, random_std)
     return motor
@@ -85,7 +90,12 @@ def build_network(params) -> Network:
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
         "heading": InputLayer(),
-        "CL1": IdentityLayer("heading"),
+        "TL2": IdentityLayer("heading"),
+        "CL1": FunctionLayer(
+            inputs=["TL2"],
+            function = cl1_output,
+            initial = np.zeros(N_CL1),
+        ),
         "TB1": FunctionLayer(
             inputs = ["CL1", "TB1"],
             function = tb1_output,
