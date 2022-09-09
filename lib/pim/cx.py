@@ -23,7 +23,7 @@ def fit_memory_fft(data):
     data = data.reshape(2,-1)
     signal = np.sum(data, axis=0)
     fund_freq = np.fft.fft(signal)[1]
-    angle = -np.angle(np.conj(fund_freq))
+    angle = np.angle(np.conj(fund_freq))
     return (0, angle)
 
 def fit_tb1(data):
@@ -103,10 +103,10 @@ class CentralComplex:
 
     def get_flow(self, heading, velocity, filter_steps=0):
         """Calculate optic flow depending on preference angles. [L, R]"""
-        A = np.array([[np.sin(heading - self.tn_prefs),
-                       np.cos(heading - self.tn_prefs)],
-                      [np.sin(heading + self.tn_prefs),
-                       np.cos(heading + self.tn_prefs)]])
+        A = np.array([[np.sin(heading + self.tn_prefs),
+                       np.cos(heading + self.tn_prefs)],
+                      [np.sin(heading - self.tn_prefs),
+                       np.cos(heading - self.tn_prefs)]])
         flow = np.dot(A, velocity)
 
         # If we are low-pass filtering speed signals (fading memory)
