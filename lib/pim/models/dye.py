@@ -24,7 +24,7 @@ def cpu1a_pontine_output(noise, slope, bias, cheat, cheat_bias, cheat_slope):
 
         #inputs = expit(100*(inputs-0.0001))
         if cheat:
-            # inputs = (inputs > 0) * 1.0 # extra cheat
+            #inputs = (inputs > 0) * 1.0 # extra cheat
             inputs = expit(cheat_slope*(inputs-cheat_bias))
 
         inputs -= reference
@@ -42,7 +42,7 @@ def cpu1b_pontine_output(noise, slope, bias, cheat, cheat_bias, cheat_slope):
         inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
 
         if cheat:
-            # inputs = (inputs > 0) * 1.0 # extra cheat
+            #inputs = (inputs > 0) * 1.0 # extra cheat
             inputs = expit(cheat_slope*(inputs-cheat_bias))
 
         inputs -= reference
@@ -160,7 +160,7 @@ def build_dye_network(params) -> Network:
     c_tot = params.get("c_tot", 0.3)
 
     cheat = params.get("cheat", False)
-    cheat_bias = params.get("cheat_bias", 0.0001)
+    cheat_bias = params.get("cheat_bias", 0.0000)
     cheat_slope = params.get("cheat_slope", 100)
 
     volume = params.get("volume", 1e-18)
@@ -172,6 +172,8 @@ def build_dye_network(params) -> Network:
 
     readout = DyeReadout[params.get("readout", "TRANSMITTANCE_WEIGHT")]
     model_transmittance = params.get("model_transmittance", True)
+
+    holonomic_pfn = params.get("holonomic", False)
 
     dye = AdvancedDyeLayer(
         epsilon = epsilon, 
@@ -186,7 +188,11 @@ def build_dye_network(params) -> Network:
         readout = readout,
     )
 
-    if params.get("start_at_stable", False):
+    mem_initial = params.get("mem_initial", None)
+    if mem_initial:
+        logger.debug("starting at mem_initial: {}", mem_initial)
+        dye.initialize(mem_initial)
+    elif params.get("start_at_stable", False):
         stable_point = dye.stable_point(beta)
         logger.debug("starting at stable point: {}", stable_point)
         dye.initialize(stable_point)
@@ -228,6 +234,7 @@ def build_dye_network(params) -> Network:
             bias = cpu4_bias_tuned,
             noise = noise,
             background_activity = beta,
+            holonomic = holonomic_pfn,
         ),
         "memory": dye,
         "Pontine": FunctionLayer(

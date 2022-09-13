@@ -35,7 +35,7 @@ def noisify_weights(W, noise=0.01):
 
 
 class MemorylessCPU4Layer(Layer):
-    def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise, background_activity = 1.0):
+    def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise, background_activity = 1.0, holonomic=False):
         self.TB1 = TB1
         self.TN1 = TN1
         self.TN2 = TN2
@@ -49,6 +49,7 @@ class MemorylessCPU4Layer(Layer):
 
         self.noise = noise
         self.background_activity = background_activity
+        self.holonomic = holonomic
 
         super().__init__(initial = np.ones(N_CPU4) * self.background_activity)
 
@@ -57,10 +58,13 @@ class MemorylessCPU4Layer(Layer):
         tn1 = network.output(self.TN1)
         tn2 = network.output(self.TN2)
 
-        mem_update = np.dot(self.W_TN, tn2)
-        mem_update -= np.dot(self.W_TB1, tb1)
-
-        return np.clip(noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain + self.background_activity, 0, 1)
+        if self.holonomic:
+            mem_update = -np.dot(self.W_TN, tn2) * (np.dot(self.W_TB1, tb1) - 0.5) + self.background_activity
+            return np.clip(noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain, 0, 1)
+        else:
+            mem_update = np.dot(self.W_TN, tn2)
+            mem_update -= np.dot(self.W_TB1, tb1)
+            return np.clip(noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain + self.background_activity, 0, 1)
 
 class CPU4Layer(Layer):
     def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise):

@@ -1,0 +1,33 @@
+{
+    "threads": 1,
+    "experiments": {
+        "stable": {
+            "comment": "Best dye model so far; can be used as control/benchmark for improvements.",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": -0.3,
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+				    "cheat": true,
+                    "holonomic": true,
+                    "noise": 0.1,
+                    "beta": 0.5,
+                    "cheat_slope": 1000,
+                    "beta-comment": "requires holonomic 'gating' (multiplication) mechanism",
+                    "readout": "TRANSMITTANCE",
+                    "phi": 0.000001,
+                    "k": 0.0000008505,
+                    "epsilon": 50,
+                    "length": 1,
+                    "c_tot": 0.3,
+					"mem_initial": 0.29397840519592444
+                }
+            }
+        }
+    }
+}
