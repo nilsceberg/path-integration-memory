@@ -223,7 +223,7 @@ class SimulationResults(ExperimentResults):
 
         if "memory" in self.recordings:
             # Homing becomes "activated" when max_delta_T crosses a small threshold of 0.01 or so; identify that point
-            self.delta_T_threshold = 0.03
+            self.delta_T_threshold = 0.04
 
             self.max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
             self.max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
@@ -232,7 +232,7 @@ class SimulationResults(ExperimentResults):
         # determined based on data
         if self.emergent_exploration and "memory" in self.recordings:
             #T_outbound = np.where(max_delta_T > delta_T_threshold)[0][0]
-            self.T_outbound = np.where(self.max_delta_T * self.max_delta_c > self.delta_T_threshold / 100)[0][0]
+            self.T_outbound = np.where(self.max_delta_T > self.delta_T_threshold)[0][0]
             self.T_inbound = len(self.headings) - self.T_outbound
         else:
             self.T_outbound = self.parameters["T_outbound"]
@@ -316,6 +316,7 @@ class SimulationResults(ExperimentResults):
 
     def closest_position(self):
         path = self.reconstruct_path()
+        print(self.T_outbound)
         return min(path[self.T_outbound:], key = np.linalg.norm)
 
     def farthest_position(self):
@@ -343,18 +344,28 @@ class SimulationResults(ExperimentResults):
     def home_headings(self):
         return [np.arctan2(x,y) + np.pi for x,y in self.reconstruct_path()]
 
-    def angular_error(self):
+    def angular_memory_error(self):
         angles = self.home_headings()
         decoded_angles = self.memory_headings()
         return angular_distance(angles[1:], decoded_angles[:])
+
+    def angular_heading_error(self):
+        angles = self.home_headings()
+        headings = self.headings
+        return angular_distance(angles[1:], headings)
 
     def distances(self):
         return np.linalg.norm(self.reconstruct_path(), axis=1)
 
     def memory_error(self):
         distances = self.distances()
-        alpha = np.abs(self.angular_error())
+        alpha = np.abs(self.angular_memory_error())
         return [d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)]
+
+    def heading_error(self):
+        distances = self.distances()
+        alpha = np.abs(self.angular_heading_error())
+        return [d*np.sin(a) if a < np.pi else d*2 for d,a in zip(distances[1:],alpha)]
 
     def memory_rmse(self):
         if "memory" in self.recordings and "internal" in self.recordings["memory"]:
@@ -385,14 +396,19 @@ class SimulationResults(ExperimentResults):
 
         return T, optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
 
+    def tortuosity_score(self):
+        return 0.0
 
     def plot_path(self, ax, search_pattern=True, decode=False):
         T_in = self.T_inbound
         T_out = self.T_outbound
         path = np.array(self.reconstruct_path())
 
-        ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")
-        ax.plot(path[T_out:,0], path[T_out:,1], label="inbound")
+        if self.emergent_exploration:
+            ax.scatter(path[1:,0], path[1:,1], marker=".", s=1, label="path", c=np.pi - np.abs(self.angular_heading_error()), cmap="plasma")
+        else:
+            ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")
+            ax.plot(path[T_out:,0], path[T_out:,1], label="inbound")
 
         closest = self.closest_position()
         ax.plot([0, closest[0]], [0, closest[1]], "--", label=f"closest distance of {np.linalg.norm(self.closest_position()):.2f} at t={self.closest_position_timestep()}")
