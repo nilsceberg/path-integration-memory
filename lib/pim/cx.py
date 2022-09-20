@@ -66,6 +66,11 @@ class CentralComplex:
         self.smoothed_flow = 0
         self.output_layer = output_layer
 
+        # Setup context
+        network.context = {
+            "homing": False
+        }
+
         self.tb1 = np.zeros(N_TB1)
         self.cpu4 = 0.5 * np.ones(N_CPU4)
 
@@ -75,11 +80,13 @@ class CentralComplex:
         self.flow_input = self.network.layers["flow"]
         self.heading_input = self.network.layers["heading"]
 
-    def update(self, dt, heading, velocity):
+    def update(self, dt, heading, velocity, homing):
         flow = self.get_flow(heading, velocity)
         self.flow_input.set(flow)
         self.heading_input.set(np.array([heading]))
 
+        # Update context and tick step network
+        self.network.context["homing"] = homing
         self.network.step(dt)
 
         self.tb1 = self.network.output("TB1")

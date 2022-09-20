@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Union, Any
 import numpy as np
 import networkx as nx
 
@@ -13,6 +13,7 @@ class Network:
         some network types (such as the forward network) relies on the order of this dictionary,
         which is a reliable property of dictionaries since Python 3.7."""
         self.layers = layers
+        self.context = None # type: Any
 
     def reset(self):
         for name, layer in self.layers.items():

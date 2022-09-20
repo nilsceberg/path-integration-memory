@@ -282,6 +282,7 @@ class SimulationResults(ExperimentResults):
             ax4.set_xlabel("time (steps)")
             ax4.set_ylabel("% transmittance")
             ax4.set_xlim(0, T_total)
+            ax4.set_ylim(0, 100)
 
             ax5.set_xlim(0, T_total)
             ax5.plot(self.max_delta_c, "--", label=r"$max \Delta c$")
@@ -534,7 +535,7 @@ class SimulationExperiment(Experiment):
             dt = 1.0 / time_subdivision
             for heading, velocity in zip(headings[0:T_outbound], velocities[0:T_outbound, :]):
                 for ts in range(time_subdivision):
-                    self.cx.update(dt, heading, velocity)
+                    self.cx.update(dt, heading, velocity, False)
                 self._record()
 
             for t in range(T_outbound, T_outbound + T_inbound):
@@ -542,7 +543,7 @@ class SimulationExperiment(Experiment):
                 velocity = velocities[t-1,:]
 
                 for ts in range(time_subdivision):
-                    motor = self.cx.update(dt, heading, velocity)
+                    motor = self.cx.update(dt, heading, velocity, True)
                     rotation = motor * self.parameters.get("motor_factor", 1.0)
 
                     # if t >= T_outbound + 100 and t <= T_outbound + 300:

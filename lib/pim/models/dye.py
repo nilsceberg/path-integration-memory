@@ -235,6 +235,7 @@ def build_dye_network(params) -> Network:
             noise = noise,
             background_activity = beta,
             holonomic = holonomic_pfn,
+            disable_beta_on_outbound = params.get("disable_beta_on_outbound", False),
         ),
         "memory": dye,
         "Pontine": FunctionLayer(
