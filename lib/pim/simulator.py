@@ -63,7 +63,7 @@ def generate_random_route(T=1500, mean_acc=default_acc, drag=default_drag,
 
 def angular_distance(a, b):
     """Returns angular distance between a and b, between -pi and +pi"""
-    x = a - b
+    x = np.subtract(a, b)
     return (x + np.pi) % (np.pi * 2) - np.pi
 
 
