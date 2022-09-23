@@ -57,7 +57,7 @@
             "comment": "varying step dye model with cheat",
             "N": 100,
             "type": "simulation",
-            "T_outbound":1500,
+            "T_outbound":{"list": [500,1000,2000,2500,3000,3500]},
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "motor_factor": -0.25,
@@ -106,10 +106,10 @@
             }
         },
         "weights": {
-            "N": 100,
             "comment": "1500 step proof-of-concept weight model",
+            "N": 100,
             "type": "simulation",
-            "T_outbound": 3000,
+            "T_outbound": 1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "record": ["memory"],
@@ -121,8 +121,8 @@
             }
         },
         "pontine": {
-            "N": 100,
             "comment": "1500 step rate pontine model",
+            "N": 100,
             "type": "simulation",
             "T_outbound": 1500,
             "T_inbound": 1500,
@@ -137,6 +137,7 @@
         },
         "basic": {
             "comment": "1500 step theoretical 'basic' model from the Stone paper",
+            "N": 100,
             "type": "simulation",
             "T_outbound": 1500,
             "T_inbound": 1500,
