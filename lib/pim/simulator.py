@@ -317,7 +317,6 @@ class SimulationResults(ExperimentResults):
 
     def closest_position(self):
         path = self.reconstruct_path()
-        print(self.T_outbound)
         return min(path[self.T_outbound:], key = np.linalg.norm)
 
     def farthest_position(self):
