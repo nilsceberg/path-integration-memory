@@ -221,7 +221,7 @@ class SimulationResults(ExperimentResults):
         # Stuff computed based on parameters
         self.emergent_exploration = self.parameters.get("emergent_exploration", False) # don't treat outbound and inbound paths as explicitly separate
 
-        if "memory" in self.recordings:
+        if "memory" in self.recordings and self.parameters.get("cx").get("type") == "dye":
             # Homing becomes "activated" when max_delta_T crosses a small threshold of 0.01 or so; identify that point
             self.delta_T_threshold = 0.04
 
@@ -333,7 +333,10 @@ class SimulationResults(ExperimentResults):
         return np.array(self.recordings["memory"]["internal"])[:,1]
 
     def memory(self):
-        return self.transmittances()
+        if self.parameters.get("cx").get("type") == "dye":
+            return self.transmittances()
+        else:
+            return np.array(self.recordings["memory"]["internal"])
 
     def memory_headings(self):
         return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.memory()]
@@ -373,6 +376,26 @@ class SimulationResults(ExperimentResults):
             rmse = np.sqrt(np.mean(np.power(error,2)))
             return rmse #, angles[1:], decoded_angles
         return 0
+
+    def compute_disk_leaving_angle(self, radius=20):
+        path = self.reconstruct_path()
+        X, Y = zip(*path)
+        X = np.array(X)
+        Y = np.array(Y)
+        N = len(X)
+        T_outbound = self.parameters["T_outbound"]
+
+        x_turning_point = X[T_outbound]
+        y_turning_point = Y[T_outbound]
+        dist_from_tp = np.sqrt((X[T_outbound:].T - x_turning_point)**2 +
+                            (Y[T_outbound:].T - y_turning_point)**2)
+        # Find the first point where we are distance of radius from turning point
+        leaving_point = np.argmax(dist_from_tp > radius, axis=0) + T_outbound
+        nest_angles = np.arctan2(-X[T_outbound], -Y[T_outbound])
+        return_angles = np.arctan2(X[leaving_point] - X[T_outbound],
+                                Y[leaving_point] - Y[T_outbound])
+        return angular_distance(nest_angles, return_angles)
+
 
     def closest_position_timestep(self):
         path = self.reconstruct_path()
