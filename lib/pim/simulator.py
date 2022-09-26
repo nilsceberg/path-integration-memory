@@ -298,6 +298,11 @@ class SimulationResults(ExperimentResults):
             ax6.set_ylabel("distance from home (steps)")
             ax6.legend()
 
+        if "motor" in self.recordings:
+            ax7.plot(self.recordings["motor"]["output"])
+            ax7.set_xlabel("time (steps)")
+            ax7.set_ylabel("motor output")
+
         plt.show()
 
     def serialize(self):
