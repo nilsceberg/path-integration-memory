@@ -239,7 +239,7 @@ class SimulationResults(ExperimentResults):
             self.T_inbound = self.parameters["T_inbound"]
 
 
-    def report(self, decode=False):
+    def report(self, decode=False, path_only=False):
         logger.info("plotting route")
         #fig, ax = plotter.plot_route(
         #    h = self.headings,
@@ -251,15 +251,22 @@ class SimulationResults(ExperimentResults):
         #    quiver_color = "black",
         #    )
 
-
-        fig, ((ax1, ax2, ax5), (ax3, ax4, ax6)) = plt.subplots(2, 3, figsize=(20, 20))
-        fig.suptitle(self.name.split(".")[0])
+        if path_only:
+            plt.figure(figsize=(20, 20))
+            ax1 = plt.axes()
+        else:
+            fig, ((ax1, ax2, ax5, ax7), (ax3, ax4, ax6, ax8)) = plt.subplots(2, 4, figsize=(20, 20))
+            fig.suptitle(self.name.split(".")[0])
 
         ax1.set_aspect(1)
         self.plot_path(ax1, decode=True)
         ax1.set_xlabel("x (steps)")
         ax1.set_ylabel("y (steps)")
         #ax1.legend()
+
+        if path_only:
+            plt.show()
+            return
 
         T_total = len(self.reconstruct_path())
         T, optimal_time, y1, y2, y3 = self.homing_tortuosity()
@@ -297,6 +304,11 @@ class SimulationResults(ExperimentResults):
             ax6.set_xlabel("time (steps)")
             ax6.set_ylabel("distance from home (steps)")
             ax6.legend()
+
+        if "motor" in self.recordings:
+            ax7.plot(self.recordings["motor"]["output"])
+            ax7.set_xlabel("time (steps)")
+            ax7.set_ylabel("motor output")
 
         plt.show()
 
@@ -339,10 +351,10 @@ class SimulationResults(ExperimentResults):
             return np.array(self.recordings["memory"]["internal"])
 
     def memory_headings(self):
-        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.memory()]
+        return [cx.fit_memory_vector_heading(mem) - np.pi for mem in self.memory()]
 
     def readout_headings(self):
-        return [cx.fit_memory_fft(mem)[1] - np.pi for mem in self.recordings["memory"]["output"]]
+        return [cx.fit_memory_vector_heading(mem) - np.pi for mem in self.recordings["memory"]["output"]]
 
     def home_headings(self):
         return [np.arctan2(x,y) + np.pi for x,y in self.reconstruct_path()]
