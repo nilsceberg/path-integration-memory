@@ -19,6 +19,23 @@ def fit_memory(data):
     params, _ = scipy.optimize.leastsq(func=error, x0=np.array([0, 0]))
     return params
 
+def vector_from_angle(angle):
+    # Strange order because of Stone
+    return np.array([np.sin(angle), np.cos(angle)])
+
+def vector_method(population, preference_vectors):
+    return np.sum(population * preference_vectors, axis=1)
+
+def fit_memory_vector(data):
+    # Uses the vector method to decode the memory
+    left_pref = tl2_prefs[:N_COLUMNS] - np.pi/4
+    right_pref = tl2_prefs[:N_COLUMNS] + np.pi/4
+    return vector_method(data[:N_COLUMNS], vector_from_angle(left_pref)) + vector_method(data[N_COLUMNS:], vector_from_angle(right_pref))
+
+def fit_memory_vector_heading(data):
+    v = fit_memory_vector(data)
+    return np.arctan2(v[0], v[1])
+
 def fit_memory_fft(data):
     data = data.reshape(2,-1)
     signal = np.sum(data, axis=0)
