@@ -58,6 +58,9 @@ class CPU4Layer(Layer):
 
         self.memory = np.clip(mem_reshaped.reshape(-1), 0.0, 1.0)
 
+    def internal(self) -> Output:
+        return  self.memory
+
     def output(self, dt: float) -> Output:
         return self.memory
 
