@@ -1,6 +1,6 @@
 """Experiments to reproduce results from Stone 2017."""
 
-from typing import List, Tuple
+from typing import List, Tuple, Union
 from loguru import logger
 import numpy as np
 import matplotlib.pyplot as plt
@@ -489,7 +489,7 @@ class SimulationResults(ExperimentResults):
 
 
 class SimulationExperiment(Experiment):
-    def __init__(self, parameters: dict) -> None:
+    def __init__(self, parameters: dict, prebuilt_cx: Union[cx.CentralComplex, None] = None) -> None:
         super().__init__()
 
         self.parameters = parameters
@@ -497,6 +497,8 @@ class SimulationExperiment(Experiment):
         self.seed = parameters.get("seed", random.randint(0, 2**32-1))
         self.layers_to_record = self.parameters["record"] if "record" in self.parameters else []
         self.recordings = {layer: { "output": [], "internal": [] } for layer in self.layers_to_record}
+
+        self.cx = prebuilt_cx
 
         logger.info("recording {}", self.layers_to_record)
 
@@ -527,9 +529,11 @@ class SimulationExperiment(Experiment):
                 vary_speed = True,
             )
         else:
-            self.cx = cx.build_from_json(self.parameters["cx"])
-
-            logger.info("initializing central complex")
+            if self.cx is not None:
+                logger.info("using prebuilt central complex")
+            else:
+                logger.info("constructing central complex from parameters")
+                self.cx = cx.build_from_json(self.parameters["cx"])
 
             logger.info("generating outbound path")
 
