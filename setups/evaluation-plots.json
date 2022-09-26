@@ -1,0 +1,166 @@
+{
+    "threads": 4,
+    "experiments": {
+        "cheat-dye-1500": {
+            "comment": "1500 step dye model with cheat",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": -0.25,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": {"range": [0.1,0.4,0.1]},
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "cheat": true,
+                    "start_at_stable": false,
+                    "disable_beta_on_outbound": false
+                }
+            }
+        },
+        "dye-1500": {
+            "comment": "1500 step dye model",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.25,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": {"range": [0.1,0.4,0.1]},
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "cheat": false,
+                    "start_at_stable": false,
+                    "disable_beta_on_outbound": false
+                }
+            }
+        },
+        "cheat-dye-diff-path": {
+            "comment": "varying step dye model with cheat",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound":{"list": [500,1000,2000,2500,3000,3500]},
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": -0.25,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": 0.1,
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "cheat": true,
+                    "start_at_stable": false,
+                    "disable_beta_on_outbound": false
+                }
+            }
+        },
+        "dye-diff-path": {
+            "comment": "varying step dye model",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": {"list": [500,1000,2000,2500,3000,3500]},
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.25,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": 0.1,
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "cheat": false,
+                    "start_at_stable": false,
+                    "disable_beta_on_outbound": false
+                }
+            }
+        },
+        "weights": {
+            "comment": "1500 step proof-of-concept weight model",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "record": ["memory"],
+            "cx": {
+                "type": "weights",
+                "params": {
+                    "noise": 0.1
+                }
+            }
+        },
+        "pontine": {
+            "comment": "1500 step rate pontine model",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "record": ["memory"],
+            "cx": {
+                "type": "pontine",
+                "params": {
+                    "noise": 0.1
+                }
+            }
+        },
+        "basic": {
+            "comment": "1500 step theoretical 'basic' model from the Stone paper",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "record": ["memory"],
+            "cx": {
+                "type": "basic",
+                "params": {
+                    "cpu4_mem_gain": 0.005,
+                    "noise": 0.1
+                }
+            }
+        },
+        "random": {
+            "comment": "Random walk for both outbound and inbound paths, as a control",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": 1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "cx": {
+                "type": "random"
+            }
+        }
+    }
+}
