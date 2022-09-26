@@ -26,7 +26,7 @@ search_pattern_center = np.zeros(2)
 path_center = np.zeros(2)
 
 def place_waypoint(waypoint):
-    global path, search_pattern_radius, search_pattern_center, path_center
+    global path, search_pattern_radius, search_pattern_center, path_center, velocities, headings
     if len(waypoints) == 0 or np.all(waypoint != waypoints[-1]):
         waypoints.append(waypoint)
 
@@ -60,3 +60,5 @@ while running:
     pygame.draw.circle(display, "green", center + search_pattern_center, 2, width=0)
 
     pygame.display.update()
+
+print(waypoints)

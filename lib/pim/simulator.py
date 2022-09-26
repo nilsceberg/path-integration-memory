@@ -549,6 +549,13 @@ class SimulationExperiment(Experiment):
                     vary_speed = True,
                     min_homing_distance = self.parameters.get("min_homing_distance", 0),
                 )
+            elif isinstance(path, dict) and "waypoints" in path:
+                T_inbound = self.parameters["T_inbound"]
+                headings, velocities = generate_path_from_waypoints(path["waypoints"], 0.05)
+                T_outbound = len(headings)
+                self.parameters["T_outbound"] = T_outbound
+                headings = np.hstack([headings, np.zeros(T_inbound)])
+                velocities = np.vstack([velocities, np.zeros((T_inbound, 2))])
             elif isinstance(path, list) or isinstance(path, np.ndarray):
                 T_inbound = self.parameters["T_inbound"]
                 headings, velocities = generate_path_from_parameters(
