@@ -1,0 +1,57 @@
+{
+    "threads": 4,
+    "experiments": {
+        "dye": {
+            "comment": "1500 step dye model",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.25,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": {"list": [0.1,0.2,0.3,0.4]},
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "cheat": false,
+                    "start_at_stable": false,
+                    "disable_beta_on_outbound": false
+                }
+            }
+        },
+        "dye-outbound": {
+            "comment": "varying step dye model",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound": {"list": [500,1000,2000,2500,3000,3500]},
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.25,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": {"list": [0.1,0.2,0.3,0.4]},
+                    "phi": 0.00045,
+                    "beta": 0.1,
+                    "k": 0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "cheat": false,
+                    "start_at_stable": false,
+                    "disable_beta_on_outbound": false
+                }
+            }
+        }
+    }
+}

@@ -1,33 +1,7 @@
 {
     "threads": 4,
     "experiments": {
-        "cheat-dye-1500": {
-            "comment": "1500 step dye model with cheat",
-            "N": 100,
-            "type": "simulation",
-            "T_outbound":1500,
-            "T_inbound": 1500,
-            "min_homing_distance": 0,
-            "motor_factor": -0.25,
-            "record": ["memory"],
-            "cx": {
-                "type": "dye",
-                "output_layer": "motor",
-                "params": {
-                    "noise": {"range": [0.1,0.4,0.1]},
-                    "phi": 0.00045,
-                    "beta": 0.1,
-                    "k": 0,
-                    "epsilon": 1e4,
-                    "length": 1e-3,
-                    "c_tot": 0.3,
-                    "cheat": true,
-                    "start_at_stable": false,
-                    "disable_beta_on_outbound": false
-                }
-            }
-        },
-        "dye-1500": {
+        "dye": {
             "comment": "1500 step dye model",
             "N": 100,
             "type": "simulation",
@@ -40,7 +14,7 @@
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
-                    "noise": {"range": [0.1,0.4,0.1]},
+                    "noise": 0.1,
                     "phi": 0.00045,
                     "beta": 0.1,
                     "k": 0,
@@ -53,11 +27,37 @@
                 }
             }
         },
-        "cheat-dye-diff-path": {
-            "comment": "varying step dye model with cheat",
+        "dye-beta": {
+            "comment": "1500 step dye model with activatable beta",
             "N": 100,
             "type": "simulation",
-            "T_outbound":{"list": [500,1000,2000,2500,3000,3500]},
+            "T_outbound":1500,
+            "T_inbound": 1500,
+            "min_homing_distance": 0,
+            "motor_factor": 0.25,
+            "record": ["memory"],
+            "cx": {
+                "type": "dye",
+                "output_layer": "motor",
+                "params": {
+                    "noise": 0.1,
+                    "phi": 0.00045,
+                    "beta": 0.3,
+                    "k": 0,
+                    "epsilon": 1e4,
+                    "length": 1e-3,
+                    "c_tot": 0.3,
+                    "cheat": false,
+                    "start_at_stable": false,
+                    "disable_beta_on_outbound": true
+                }
+            }
+        },
+        "cheat-dye": {
+            "comment": "1500 step dye model with cheat layer",
+            "N": 100,
+            "type": "simulation",
+            "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "motor_factor": -0.25,
@@ -74,32 +74,6 @@
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": true,
-                    "start_at_stable": false,
-                    "disable_beta_on_outbound": false
-                }
-            }
-        },
-        "dye-diff-path": {
-            "comment": "varying step dye model",
-            "N": 100,
-            "type": "simulation",
-            "T_outbound": {"list": [500,1000,2000,2500,3000,3500]},
-            "T_inbound": 1500,
-            "min_homing_distance": 0,
-            "motor_factor": 0.25,
-            "record": ["memory"],
-            "cx": {
-                "type": "dye",
-                "output_layer": "motor",
-                "params": {
-                    "noise": 0.1,
-                    "phi": 0.00045,
-                    "beta": 0.1,
-                    "k": 0,
-                    "epsilon": 1e4,
-                    "length": 1e-3,
-                    "c_tot": 0.3,
-                    "cheat": false,
                     "start_at_stable": false,
                     "disable_beta_on_outbound": false
                 }
@@ -113,11 +87,14 @@
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "record": ["memory"],
+            "motor_factor": 1,
             "cx": {
                 "type": "weights",
                 "params": {
-                    "noise": 0.1
+                    "noise": 0.1,
+                    "motor-noise": 0.0
                 }
+
             }
         },
         "pontine": {
