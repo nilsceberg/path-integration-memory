@@ -42,7 +42,7 @@
                 "params": {
                     "noise": 0.1,
                     "phi": 0.00045,
-                    "beta": 0.3,
+                    "beta": 0.5,
                     "k": 0,
                     "epsilon": 1e4,
                     "length": 1e-3,
@@ -92,9 +92,11 @@
                 "type": "weights",
                 "params": {
                     "noise": 0.1,
-                    "motor-noise": 0.0
+                    "motor_noise": 0.0,
+                    "pfn_background_activity": 0.0,
+                    "mem_gain": 0.0045,
+                    "mem_fade": 0.13
                 }
-
             }
         },
         "pontine": {
