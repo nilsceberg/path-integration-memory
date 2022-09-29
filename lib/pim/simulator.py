@@ -279,7 +279,7 @@ class SimulationResults(ExperimentResults):
         ax2.set_xlim(0, T_total)
         ax2.legend()
 
-        if "memory" in self.recordings:
+        if "memory" in self.recordings and self.parameters['cx']['type'] == 'dye':
             ax3.plot(self.concentrations())
             ax3.set_xlabel("time (steps)")
             ax3.set_ylabel("concentration (M)")
@@ -432,7 +432,13 @@ class SimulationResults(ExperimentResults):
         return T, optimal_homing_time, distance_from_home / turning_point_distance, np.minimum.accumulate(distance_from_home) / turning_point_distance, optimal_distance_from_home / turning_point_distance
 
     def tortuosity_score(self):
-        return 0.0
+
+        _,_,actual,_,optimal = self.homing_tortuosity()
+
+        error = optimal - actual
+        rmse = np.sqrt(np.mean(np.power(error,2)))
+
+        return rmse
 
     def plot_path(self, ax, search_pattern=True, decode=False, headings=False):
         T_in = self.T_inbound
