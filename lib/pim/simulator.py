@@ -434,7 +434,7 @@ class SimulationResults(ExperimentResults):
     def tortuosity_score(self):
         return 0.0
 
-    def plot_path(self, ax, search_pattern=True, decode=False):
+    def plot_path(self, ax, search_pattern=True, decode=False, headings=False):
         T_in = self.T_inbound
         T_out = self.T_outbound
         path = np.array(self.reconstruct_path())
@@ -454,9 +454,19 @@ class SimulationResults(ExperimentResults):
             ax.add_patch(circle)
             ax.plot(center[0], center[1], '*', label="search pattern center")
 
+        nth = 50
+        if headings:
+            ax.quiver(
+                path[1::nth,0],
+                path[1::nth,1],
+                np.sin(self.headings[::nth]),
+                np.cos(self.headings[::nth]),
+                scale=10,
+                width=0.003,
+            )
+
         if decode and "memory" in self.recordings:
             memory_headings = self.memory_headings()
-            nth = 50
             ax.quiver(
                 path[1::nth,0],
                 path[1::nth,1],
