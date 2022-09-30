@@ -87,15 +87,14 @@
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "record": ["memory"],
-            "motor_factor": 1,
+            "motor_factor": 0.25,
             "cx": {
                 "type": "weights",
                 "params": {
                     "noise": 0.1,
-                    "motor_noise": 0.0,
-                    "pfn_background_activity": 0.0,
-                    "mem_gain": 0.0045,
-                    "mem_fade": 0.13
+                    "pfn_background_activity": 0.3,
+                    "mem_gain": 0.0025,
+                    "mem_fade": 0.425
                 }
             }
         },
