@@ -228,6 +228,9 @@ class SimulationResults(ExperimentResults):
             self.max_delta_c = np.max(self.concentrations()[:,:], axis=1) - np.min(self.concentrations()[:,:], axis=1)
             self.max_delta_T = np.max(self.transmittances()[:,:], axis=1) - np.min(self.transmittances()[:,:], axis=1)
 
+        # which of potential internal memory recordings to use as memory
+        self.internal_memory_index = 1 if parameters["cx"]["type"] == "dye" else 0
+
         # The effective outbound time, either explicitly, or
         # determined based on data
         if self.emergent_exploration and "memory" in self.recordings:
@@ -348,10 +351,14 @@ class SimulationResults(ExperimentResults):
         return np.array(self.recordings["memory"]["internal"])[:,0]
 
     def transmittances(self):
-        return np.array(self.recordings["memory"]["internal"])[:,1]
+        if self.parameters["cx"]["type"] == "dye":
+            return np.array(self.recordings["memory"]["internal"])[:,1]
+        else:
+            return np.zeros(np.shape(self.concentrations()))
 
     def memory(self):
-        return self.transmittances()
+        #return self.transmittances()
+        return np.array(self.recordings["memory"]["internal"])[:,self.internal_memory_index]
 
     def readout(self):
         return self.recordings["memory"]["output"]
@@ -382,6 +389,9 @@ class SimulationResults(ExperimentResults):
         distances = self.distances()
         alpha = np.abs(self.angular_memory_error())
         return [d*np.sin(a) if a < np.pi else d for d,a in zip(distances[1:],alpha)]
+
+    def corrected_memory_error(self):
+        return self.memory_error() / self.distances()[1:]
 
     def heading_error(self):
         distances = self.distances()

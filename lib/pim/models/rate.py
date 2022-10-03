@@ -110,7 +110,7 @@ class CPU4Layer(Layer):
 
 class CPU4PontineLayer(CPU4Layer):
     def internal(self):
-        return self.memory
+        return [self.memory, self.memory]
 
     def step(self, network: Network, dt: float):
         """Memory neurons update.
