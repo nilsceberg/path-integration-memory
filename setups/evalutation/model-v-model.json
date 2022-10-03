@@ -27,7 +27,7 @@
                 }
             }
         },
-        "dye-beta": {
+        "beta-dye": {
             "comment": "1500 step dye model with activatable beta",
             "N": 100,
             "type": "simulation",
