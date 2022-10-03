@@ -8,15 +8,15 @@
             "T_outbound": 1,
             "T_inbound": 3000,
             "min_homing_distance": 0,
-            "motor_factor": 0.25,
+            "motor_factor": -0.25,
             "emergent_exploration": true,
             "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
-                    "cheat": false,
-                    "noise": 0.1,
+                    "cheat": true,
+                    "noise": 0.02,
                     "mem_initial": 0.0,
                     "phi": 0.00045,
                     "beta": 0.1,

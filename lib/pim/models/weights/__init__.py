@@ -34,7 +34,7 @@ class PlasticWeightLayer(Layer):
         #print(self.weights)
 
     def internal(self):
-        return self.weights.tolist()
+        return [self.weights, self.weights]
 
     def output(self, network: Network):
         #return self._output

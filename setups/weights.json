@@ -1,16 +1,17 @@
 {
     "experiments": {
-        "inverting": {
+        "weights": {
+            "N": 100,
             "type": "simulation",
-            "motor_factor": 2,
+            "motor_factor": 0.25,
             "T_outbound": 1500,
             "T_inbound": 1500,
             "cx": {
-                "type": "weights-inverting",
+                "type": "weights",
                 "params": {
-                    "noise": 0.05,
-                    "background_activity": 1.0,
-                    "mem_fade": 1.125,
+                    "noise": 0.1,
+                    "beta": 0.3,
+                    "mem_fade": 0.45,
                     "mem_gain": 0.0025
                 }
             }

@@ -7,22 +7,22 @@
             "type": "simulation",
             "T_outbound":1500,
             "T_inbound": 1500,
-            "min_homing_distance": 300,
-            "motor_factor": 0.25,
+            "motor_factor": 0.1,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
-                    "cheat": false,
-                    "noise": 0.1,
+                    "cheat": true,
+                    "noise": 0.10,
                     "mem_initial": 0.0,
                     "pfn_weight_factor": 1,
                     "phi": 0.00045,
                     "beta": 0.3,
                     "k": 0,
-                    "epsilon": 1e4,
-                    "length": 1e-3,
+                    "epsilon": 10,
+                    "length": 1,
                     "c_tot": 0.3,
+                    "cheat_slope": 100,
                     "start_at_stable": false,
                     "disable_beta_on_outbound": true
                 }

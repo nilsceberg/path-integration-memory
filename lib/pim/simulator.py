@@ -221,7 +221,7 @@ class SimulationResults(ExperimentResults):
         # Stuff computed based on parameters
         self.emergent_exploration = self.parameters.get("emergent_exploration", False) # don't treat outbound and inbound paths as explicitly separate
 
-        if "memory" in self.recordings and self.parameters.get("cx").get("type") == "dye":
+        if "memory" in self.recordings:
             # Homing becomes "activated" when max_delta_T crosses a small threshold of 0.01 or so; identify that point
             self.delta_T_threshold = 0.04
 
@@ -279,7 +279,7 @@ class SimulationResults(ExperimentResults):
         ax2.set_xlim(0, T_total)
         ax2.legend()
 
-        if "memory" in self.recordings and self.parameters['cx']['type'] == 'dye':
+        if "memory" in self.recordings:
             ax3.plot(self.concentrations())
             ax3.set_xlabel("time (steps)")
             ax3.set_ylabel("concentration (M)")
@@ -290,6 +290,12 @@ class SimulationResults(ExperimentResults):
             ax4.set_ylabel("% transmittance")
             ax4.set_xlim(0, T_total)
             ax4.set_ylim(0, 100)
+
+            ax8.plot(self.readout())
+            ax8.set_xlabel("time (steps)")
+            ax8.set_ylabel("activity")
+            ax8.set_xlim(0, T_total)
+            ax8.set_ylim(0, 1)
 
             ax5.set_xlim(0, T_total)
             ax5.plot(self.max_delta_c, "--", label=r"$max \Delta c$")
@@ -345,10 +351,10 @@ class SimulationResults(ExperimentResults):
         return np.array(self.recordings["memory"]["internal"])[:,1]
 
     def memory(self):
-        if self.parameters.get("cx").get("type") == "dye":
-            return self.transmittances()
-        else:
-            return np.array(self.recordings["memory"]["internal"])
+        return self.transmittances()
+
+    def readout(self):
+        return self.recordings["memory"]["output"]
 
     def memory_headings(self):
         return [cx.fit_memory_vector_heading(mem) - np.pi for mem in self.memory()]
