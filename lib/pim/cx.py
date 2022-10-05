@@ -41,7 +41,7 @@ def fit_memory_fft(data):
     signal = np.sum(data, axis=0)
     fund_freq = np.fft.fft(signal)[1]
     angle = np.angle(np.conj(fund_freq))
-    return (0, angle)
+    return angle
 
 def fit_tb1(data):
     xs = np.linspace(0, 2*np.pi, N_TB1, endpoint = False)
