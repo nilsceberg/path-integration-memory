@@ -92,7 +92,7 @@
                 "type": "weights",
                 "params": {
                     "noise": 0.1,
-                    "pfn_background_activity": 0.3,
+                    "beta": 0.3,
                     "mem_gain": 0.0025,
                     "mem_fade": 0.425
                 }
