@@ -128,17 +128,6 @@
                     "noise": 0.1
                 }
             }
-        },
-        "random": {
-            "comment": "Random walk for both outbound and inbound paths, as a control",
-            "N": 100,
-            "type": "simulation",
-            "T_outbound": 1500,
-            "T_inbound": 1500,
-            "min_homing_distance": 0,
-            "cx": {
-                "type": "random"
-            }
         }
     }
 }
