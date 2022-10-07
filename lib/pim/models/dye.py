@@ -150,14 +150,20 @@ class AdvancedDyeLayer(DyeLayer):
             return network.output("CPU4") * self.weights
 
 
+def noisify_column_parameter(param, noise):
+    return param + np.random.normal(0, noise * param, N_CPU4)
+
+
 def build_dye_network(params) -> Network:
-    epsilon = params.get("epsilon", 1.0)
-    length = params.get("length", 10e-4)
+    parameter_noise = params.get("parameter_noise", 0.0)
+
+    epsilon = noisify_column_parameter(params.get("epsilon", 1.0), parameter_noise)
+    length = noisify_column_parameter(params.get("length", 10e-4), parameter_noise)
     T_half = params.get("T_half", 1.0)
-    k = params.get("k", np.log(2) / T_half)
-    beta = params.get("beta", 0.0)
-    phi = params.get("phi", 1.0)
-    c_tot = params.get("c_tot", 0.3)
+    k = noisify_column_parameter(params.get("k", np.log(2) / T_half), parameter_noise)
+    beta = noisify_column_parameter(params.get("beta", 0.0), parameter_noise)
+    phi = noisify_column_parameter(params.get("phi", 1.0), parameter_noise)
+    c_tot = noisify_column_parameter(params.get("c_tot", 0.3), parameter_noise)
 
     cheat = params.get("cheat", False)
     cheat_bias = params.get("cheat_bias", 0.0000)
