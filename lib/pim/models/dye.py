@@ -151,7 +151,9 @@ class AdvancedDyeLayer(DyeLayer):
 
 
 def noisify_column_parameter(param, noise):
-    return param + np.random.normal(0, noise * param, N_CPU4)
+    # TODO: problematic to use random values at initialisation as that affects
+    # outbound path generation... Workaround: only apply if noise > 0.0
+    return param + np.random.normal(0, noise * param, N_CPU4) if noise > 0.0 else param
 
 
 def build_dye_network(params) -> Network:
