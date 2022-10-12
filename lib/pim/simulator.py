@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from scipy.signal import lfilter
 from scipy.interpolate import interp1d
 import random
+import copy
 
 from .experiment import Experiment, ExperimentResults
 from . import cx
@@ -456,7 +457,7 @@ class SimulationResults(ExperimentResults):
 
         return rmse
 
-    def plot_path(self, ax, search_pattern=True, decode=False, headings=False):
+    def plot_path(self, ax, search_pattern=False, decode=False, headings=False):
         T_in = self.T_inbound
         T_out = self.T_outbound
         path = np.array(self.reconstruct_path())
@@ -615,6 +616,7 @@ class SimulationExperiment(Experiment):
                     self.cx.update(dt, heading, velocity, False)
                 self._record()
 
+            obstacles = self.parameters.get("obstacles", None)
             for t in range(T_outbound, T_outbound + T_inbound):
                 heading = headings[t-1]
                 velocity = velocities[t-1,:]
@@ -623,19 +625,7 @@ class SimulationExperiment(Experiment):
                     motor = self.cx.update(dt, heading, velocity, True)
                     rotation = motor * self.parameters.get("motor_factor", 1.0)
 
-                    # if t >= T_outbound + 100 and t <= T_outbound + 300:
-                    #     heading = np.pi
-                    #     rotation = 0
-
-                    # if t >= T_outbound + 500 and t <= T_outbound + 600:
-                    #     heading = 0
-                    #     rotation = 0
-
-                    # if t >= T_outbound + 650 and t <= T_outbound + 850:
-                    #     heading = np.pi
-                    #     rotation = 0
-
-                    heading, velocity = get_next_state(
+                    new_heading, new_velocity = get_next_state(
                         dt=dt,
                         velocity=velocity,
                         heading=heading,
@@ -644,7 +634,79 @@ class SimulationExperiment(Experiment):
                         rotation=rotation,
                     )
 
-                headings[t], velocities[t,:] = heading, velocity
+                    if obstacles is not None:
+                        def get_xy_from_velocity(V):
+                            XY = np.cumsum(V, axis=1)
+                            X = XY[:, :, 0]
+                            Y = XY[:, :, 1]
+                            return X, Y
+
+                        def onSegment(p, q, r):
+                            if ( (q[0] <= max(p[0], r[0])) and (q[0] >= min(p[0], r[0])) and 
+                                (q[1] <= max(p[1], r[1])) and (q[1] >= min(p[1], r[1]))):
+                                return True
+                            return False
+                        
+                        def orientation(p, q, r):
+                            val = (float(q[1] - p[1]) * (r[0] - q[0])) - (float(q[0] - p[0]) * (r[1] - q[1]))
+                            if (val > 0):
+                                # print("1")
+                                return 1
+                            elif (val < 0):
+                                # print("2")
+                                return 2
+                            else:
+                                # print("0")
+                                return 0
+                        
+                        def doIntersect(p1,q1,p2,q2):
+                            o1 = orientation(p1, q1, p2)
+                            o2 = orientation(p1, q1, q2)
+                            o3 = orientation(p2, q2, p1)
+                            o4 = orientation(p2, q2, q1)
+                        
+                            if ((o1 != o2) and (o3 != o4)):
+                                return True
+                            if ((o1 == 0) and onSegment(p1, p2, q1)):
+                                return True
+                            if ((o2 == 0) and onSegment(p1, q2, q1)):
+                                return True
+                            if ((o3 == 0) and onSegment(p2, p1, q2)):
+                                return True
+                            if ((o4 == 0) and onSegment(p2, q1, q2)):
+                                return True
+                            return False
+
+                        new = copy.deepcopy(velocities)
+                        new[t,:] = new_velocity
+                        x,y = get_xy_from_velocity([new[0:t+1,:]])
+
+                        x_1 = x[0][t-1]
+                        y_1 = y[0][t-1]
+                        x_2 = x[0][t]
+                        y_2 = y[0][t]
+
+                        p1 = (x_1,y_1)
+                        q1 = (x_2,y_2)
+                    
+                        for line in obstacles:
+                            if doIntersect(p1,q1,line[0],line[1]):
+                                i = -1
+                                new_heading = np.pi*-i
+                                # rotation = 0
+                                new_velocity = [0,1*i]
+
+                                # new_heading, new_velocity = get_next_state(
+                                #     dt=dt,
+                                #     velocity=velocity,
+                                #     heading=heading,
+                                #     acceleration=0.1,
+                                #     drag=default_drag,
+                                #     rotation=rotation,
+                                # )
+                                break
+
+                headings[t], velocities[t,:] = new_heading, new_velocity
                 self._record()
 
             self.headings = headings
