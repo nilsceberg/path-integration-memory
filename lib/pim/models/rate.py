@@ -65,15 +65,24 @@ class MemorylessCPU4Layer(Layer):
 
         # Not really holonomic!
         if self.holonomic:
-            mem_update = -np.dot(self.W_TN, tn2) * (np.dot(self.W_TB1, tb1) - 0.5) + beta
-            return np.clip(noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain, 0, 1)
+            # mem_update = -np.dot(self.W_TN, tn2) * (np.dot(self.W_TB1, tb1) - 0.5) + beta
+            # return np.clip(noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain, 0, 1)
+
+
+            mem_update = (0.5 - tn1.reshape(2, 1)) * (1.0 - tb1)
+            mem_update -= 0.5 * (0.5 - tn1.reshape(2, 1))
+
+            mem_update = mem_update.reshape(-1)# + self.background_activity
+
+            # mem_update = -np.dot(self.W_TN, tn2) * (np.dot(self.W_TB1, tb1) - 0.5)
+            return np.clip(noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain + beta, 0, 1)
         else:
             mem_update = np.dot(self.W_TN, tn2)
             mem_update -= np.dot(self.W_TB1, tb1)
             return np.clip(noisy_sigmoid(mem_update, self.slope, self.bias, self.noise) * self.gain + beta, 0, 1)
 
 class CPU4Layer(Layer):
-    def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise):
+    def __init__(self, TB1, TN1, TN2, W_TN, W_TB1, gain, slope, bias, noise, holonomic=False):
         self.TB1 = TB1
         self.TN1 = TN1
         self.TN2 = TN2
@@ -84,6 +93,7 @@ class CPU4Layer(Layer):
         self.gain = gain
         self.slope = slope
         self.bias = bias
+        self.holonomic = holonomic
 
         self.noise = noise
 
@@ -120,13 +130,21 @@ class CPU4PontineLayer(CPU4Layer):
         tn1 = network.output(self.TN1)
         tn2 = network.output(self.TN2)
 
-        mem_update = np.dot(self.W_TN, tn2)
-        mem_update -= np.dot(self.W_TB1, tb1)
-        mem_update = np.clip(mem_update, 0, 1)
-        mem_update *= self.gain
-        self.memory += mem_update * dt
-        self.memory -= 0.125 * self.gain * dt
-        self.memory = np.clip(self.memory, 0.0, 1.0)
+        if not self.holonomic:
+            mem_update = np.dot(self.W_TN, tn2)
+            mem_update -= np.dot(self.W_TB1, tb1)
+            mem_update = np.clip(mem_update, 0, 1)
+            mem_update *= self.gain
+            self.memory += mem_update * dt
+            self.memory -= 0.09 * self.gain * dt
+            self.memory = np.clip(self.memory, 0.0, 1.0)
+        elif self.holonomic:
+            cpu4_mem_reshaped = self.memory.reshape(2, -1)
+            mem_update = (0.5 - tn1.reshape(2, 1)) * (1.0 - tb1)
+            mem_update -= 0.5 * (0.5 - tn1.reshape(2, 1))
+            # mem_update = mem_update.reshape(-1)
+            cpu4_mem_reshaped += self.gain * mem_update
+            self.memory = np.clip(cpu4_mem_reshaped.reshape(-1), 0.0, 1.0)
 
 W_CL1_TB1 = np.tile(np.eye(N_TB1), 2)
 W_TB1_TB1 = gen_tb_tb_weights()
@@ -365,6 +383,7 @@ def build_network_pontine(params) -> Network:
     # TODO: allow noisy weights
     noise = params.get("noise",0.1)
     cpu4_mem_gain = params.get("cpu4_mem_gain",0.0025)
+    holonomic = params.get("holonomic",False)
 
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
@@ -402,6 +421,7 @@ def build_network_pontine(params) -> Network:
             cpu4_slope_tuned,
             cpu4_bias_tuned,
             noise,
+            holonomic=holonomic
         ),
         "Pontine": FunctionLayer(
             inputs = ["memory"],
