@@ -566,6 +566,27 @@ def plot_memory_heatmap(ax, result):
     ax.set_ylabel("column")
     ax.set_xticks(np.arange(0, len(result.transmittances()) + 1, 500))
 
+def plot_path_and_memory(result):
+    fig = plt.figure(figsize=(10, 5))
+
+    fig1, fig2 = fig.subfigures(1, 2)
+    ax1 = fig1.subplots(1, 1)
+    ax1.set_aspect(1)
+    ax1.set_title("(a) Path")
+    result.plot_path(ax1)
+
+    ax2a, ax2b = fig2.subplots(2, 1)
+
+    ax2a.set_title("(b) Memory weights")
+    ax2a.plot(result.memory())
+    ax2a.set_ylabel("weight")
+    ax2a.set_xlabel("time (steps)")
+    ax2a.set_ylim(0, 1)
+    ax2a.set_xlim(0, result.T_inbound + result.T_outbound)
+
+    plot_memory_heatmap(ax2b, result)
+
+    plt.show()
 
 def squarify_axes(ax):
     # grow axes around center so that both axes are equal
