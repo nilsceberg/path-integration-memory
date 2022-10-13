@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.lines as mlines
 
+from .models.constants import *
+
 nature_single = 89.0 / 25.4
 nature_double = 183.0 / 25.4
 nature_full = 400.0 / 25.4
@@ -556,3 +558,21 @@ def plot_cxr_weights(cx, label_font_size=11, unit_font_size=10,
                            '1.0 (Excitation)'])
     plt.tight_layout()
     return fig, ax
+
+def plot_memory_heatmap(ax, result):
+    import matplotlib.colors as clr
+    ax.imshow(result.memory().T, cmap="hot", aspect="auto", interpolation="nearest", norm = clr.Normalize(0, 1))
+    ax.set_xlabel("time (steps)")
+    ax.set_ylabel("column")
+    ax.set_xticks(np.arange(0, len(result.transmittances()) + 1, 500))
+
+
+def squarify_axes(ax):
+    # grow axes around center so that both axes are equal
+    xlim = ax.get_xlim()
+    ylim = ax.get_ylim()
+    largest = np.maximum(xlim[1] - xlim[0], ylim[1] - ylim[0])
+    xmid = 0.5*np.sum(xlim)
+    ymid = 0.5*np.sum(ylim)
+    ax.set_xlim(xmid - largest/2, xmid + largest/2)
+    ax.set_ylim(ymid - largest/2, ymid + largest/2)

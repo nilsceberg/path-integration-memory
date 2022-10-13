@@ -319,6 +319,7 @@ class SimulationResults(ExperimentResults):
             ax7.set_xlabel("time (steps)")
             ax7.set_ylabel("motor output")
 
+        plt.tight_layout()
         plt.show()
 
     def serialize(self):
@@ -351,7 +352,7 @@ class SimulationResults(ExperimentResults):
         return np.array(self.recordings["memory"]["internal"])[:,0]
 
     def transmittances(self):
-        if self.parameters["cx"]["type"] == "dye":
+        if len(self.recordings["memory"]["internal"][0]) > 1: #self.parameters["cx"]["type"] == "dye":
             return np.array(self.recordings["memory"]["internal"])[:,1]
         else:
             return np.zeros(np.shape(self.concentrations()))
@@ -456,7 +457,7 @@ class SimulationResults(ExperimentResults):
 
         return rmse
 
-    def plot_path(self, ax, search_pattern=True, decode=False, headings=False):
+    def plot_path(self, ax, search_pattern=False, decode=False, headings=False, show_closest=False, squarify=True):
         T_in = self.T_inbound
         T_out = self.T_outbound
         path = np.array(self.reconstruct_path())
@@ -468,7 +469,8 @@ class SimulationResults(ExperimentResults):
             ax.plot(path[T_out:,0], path[T_out:,1], label="inbound")
 
         closest = self.closest_position()
-        ax.plot([0, closest[0]], [0, closest[1]], "--", label=f"closest distance of {np.linalg.norm(self.closest_position()):.2f} at t={self.closest_position_timestep()}")
+        if show_closest:
+            ax.plot([0, closest[0]], [0, closest[1]], "--", label=f"closest distance of {np.linalg.norm(self.closest_position()):.2f} at t={self.closest_position_timestep()}")
 
         if search_pattern:
             center, radius = self.search_pattern()
@@ -518,6 +520,10 @@ class SimulationResults(ExperimentResults):
         # )
 
         ax.plot(0, 0, "*")
+
+        if squarify:
+            from pim.plotter import squarify_axes
+            squarify_axes(ax)
 
 
 class SimulationExperiment(Experiment):
@@ -583,7 +589,7 @@ class SimulationExperiment(Experiment):
                 )
             elif isinstance(path, dict) and "waypoints" in path:
                 T_inbound = self.parameters["T_inbound"]
-                headings, velocities = generate_path_from_waypoints(path["waypoints"], 0.05)
+                headings, velocities = generate_path_from_waypoints(path["waypoints"], 0.025)
                 T_outbound = len(headings)
                 self.parameters["T_outbound"] = T_outbound
                 headings = np.hstack([headings, np.zeros(T_inbound)])

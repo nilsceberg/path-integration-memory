@@ -95,18 +95,20 @@ def enumerate_results(filenames) -> "list[Path]":
     
     return paths
 
+def load_path(path):
+    with path.open("rb") as f:
+        data = pickle.load(f)
+        experiment_type = data["parameters"]["type"]
+        if experiment_type == "simulation":
+            return simulator.load_results(data)
+        else:
+            raise RuntimeError(f"unknown experiment type: {experiment_type}")
+
+def load_result(filename):
+    return load_path(Path(filename))
 
 # TODO: Type annotation assumes SimulationResults...
 def load_results(paths: "Iterable[Path]") -> Iterable[simulator.SimulationResults]:
-    def load_path(path):
-        with path.open("rb") as f:
-            data = pickle.load(f)
-            experiment_type = data["parameters"]["type"]
-            if experiment_type == "simulation":
-                return simulator.load_results(data)
-            else:
-                raise RuntimeError(f"unknown experiment type: {experiment_type}")
-
     return (load_path(path) for path in paths)
 
 def get_path_and_value(dic, prepath=[]):
