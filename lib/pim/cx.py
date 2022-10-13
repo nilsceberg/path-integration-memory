@@ -85,7 +85,8 @@ class CentralComplex:
 
         # Setup context
         network.context = {
-            "homing": False
+            "homing": False,
+            "time": 0,
         }
 
         self.tb1 = np.zeros(N_TB1)
@@ -104,6 +105,7 @@ class CentralComplex:
 
         # Update context and tick step network
         self.network.context["homing"] = homing
+        self.network.context["time"] += dt
         self.network.step(dt)
 
         self.tb1 = self.network.output("TB1")

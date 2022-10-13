@@ -61,7 +61,9 @@ class MemorylessCPU4Layer(Layer):
         tn2 = network.output(self.TN2)
 
         use_beta = (not self.disable_beta_on_outbound) or network.context["homing"]
-        beta = self.background_activity if use_beta else 0.0
+        oscillating_beta = False
+        beta_pattern = (0.5 + 0.5 * np.sin(network.context["time"] / 10.0)) if oscillating_beta else 1.0
+        beta = self.background_activity * beta_pattern if use_beta else 0.0
 
         # Not really holonomic!
         if self.holonomic:
