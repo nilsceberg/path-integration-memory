@@ -82,6 +82,7 @@ def build_phase_shift_network(params) -> Network:
     motor_noise = params.get("motor_noise", noise)
     mem_gain = params.get("mem_gain", 0.0025)
     mem_fade = params.get("mem_fade", 0.1)
+    mode = params.get("mode", "LINEAR")
     beta = params.get("beta", 0.0),
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
 
@@ -134,7 +135,7 @@ def build_phase_shift_network(params) -> Network:
             noise = noise,
             background_activity = beta,
         ),
-        "memory": PlasticWeightLayer(noise, mem_gain, mem_fade),
+        "memory": PlasticWeightLayer(noise, mem_gain, mem_fade, mode),
         "Pontine": FunctionLayer(
             inputs = ["memory"],
             function = pontine_output(noise),

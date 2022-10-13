@@ -15,26 +15,50 @@ from scipy.special import expit
 
 
 class PlasticWeightLayer(Layer):
-    def __init__(self, noise: float, gain: float, fade: float = 0.125, sigmoid=False, initial_weights = np.ones(N_CPU4) * 0.5):
+    def __init__(self, noise: float, gain: float, fade: float = 0.125, mode="LINEAR", sigmoid=False, initial_weights = np.ones(N_CPU4) * 0.5):
         self.gain = gain
         self.fade = fade
         self.noise = noise
         self.sigmoid = sigmoid
+        self.mode = mode
 
         self.weights = initial_weights
+
+        if mode == "EXP":
+            self.weights = np.ones(N_CPU4)
+        if mode == "LOG":
+            self.weights = np.ones(N_CPU4) * 0.1
+
         self._output = np.zeros(N_CPU4)
         super().__init__(initial = self._output)
 
     def step(self, network: Network, dt: float):
         cpu4 = network.output("CPU4")
-        self._output = cpu4 * self.weights #+ np.random.normal(0, self.noise)
-        dwdt = (cpu4 - self.fade) * self.gain
-        self.weights += dwdt * dt
-        self.weights = np.clip(self.weights, 0, 1)
+
+        if self.mode == "LINEAR":
+            self._output = cpu4 * self.weights #+ np.random.normal(0, self.noise)
+            dwdt = (cpu4 - self.fade) * self.gain
+            self.weights += dwdt * dt
+            self.weights = np.clip(self.weights, 0, 1)
+        elif self.mode == "EXP":
+            # A bit of a weird experiment...
+            self._output = cpu4 * (self.weights / np.max(self.weights))
+            self.weights += cpu4 * self.weights * dt * 0.01
+        elif self.mode == "LOG":
+            self._output = cpu4 * (self.normalized_weights() - 0.8) * 10.0
+            self.weights += cpu4 * 1.0 / self.weights * dt * 0.001
         #print(self.weights)
 
+    def normalized_weights(self):
+        return self.weights / np.max(self.weights)
+
+    def relative_weights(self):
+        weights = self.weights - np.min(self.weights)
+        weights /= np.max(weights)
+        return weights
+
     def internal(self):
-        return [self.weights]
+        return [self.weights.copy(), self.normalized_weights()]
 
     def output(self, network: Network):
         #return self._output
