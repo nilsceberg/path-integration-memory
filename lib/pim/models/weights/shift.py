@@ -85,6 +85,7 @@ def build_phase_shift_network(params) -> Network:
     mode = params.get("mode", "LINEAR")
     beta = params.get("beta", 0.0),
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
+    holonomic = params.get("holonomic",False)
 
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
@@ -134,6 +135,7 @@ def build_phase_shift_network(params) -> Network:
             bias = cpu4_bias_tuned,
             noise = noise,
             background_activity = beta,
+            holonomic = holonomic
         ),
         "memory": PlasticWeightLayer(noise, mem_gain, mem_fade, mode),
         "Pontine": FunctionLayer(
