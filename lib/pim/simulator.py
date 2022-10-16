@@ -521,6 +521,9 @@ class SimulationResults(ExperimentResults):
         # )
 
         ax.plot(0, 0, "*")
+        ax.legend()
+        ax.set_xlabel("steps")
+        ax.set_ylabel("steps")
 
         if squarify:
             from pim.plotter import squarify_axes
