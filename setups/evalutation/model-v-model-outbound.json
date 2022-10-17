@@ -15,10 +15,10 @@
                 "output_layer": "motor",
                 "params": {
                     "noise": 0.1,
-                    "phi": 0.00045,
-                    "beta": 0.1,
+                    "phi": 0.0003,
+                    "beta": 0.3,
                     "k": 0,
-                    "epsilon": 1e4,
+                    "epsilon": 1.5e4,
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": false,
@@ -41,10 +41,10 @@
                 "output_layer": "motor",
                 "params": {
                     "noise": 0.1,
-                    "phi": 0.00045,
+                    "phi": 0.0003,
                     "beta": 0.5,
                     "k": 0,
-                    "epsilon": 1e4,
+                    "epsilon": 1.5e4,
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": false,
@@ -53,7 +53,7 @@
                 }
             }
         },
-        "dye pontine": {
+        "dye amp": {
             "comment": "1500 step dye model with cheat layer",
             "N": 100,
             "type": "simulation",
@@ -67,10 +67,10 @@
                 "output_layer": "motor",
                 "params": {
                     "noise": 0.1,
-                    "phi": 0.00045,
-                    "beta": 0.1,
+                    "phi": 0.0003,
+                    "beta": 0.3,
                     "k": 0,
-                    "epsilon": 1e4,
+                    "epsilon": 1.5e4,
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": true,
@@ -79,7 +79,7 @@
                 }
             }
         },
-        "dye var beta + pontine": {
+        "dye var beta + amp": {
             "comment": "1500 step dye model with activatable beta",
             "N": 100,
             "type": "simulation",
@@ -93,10 +93,10 @@
                 "output_layer": "motor",
                 "params": {
                     "noise": 0.1,
-                    "phi": 0.00045,
+                    "phi": 0.0003,
                     "beta": 0.5,
                     "k": 0,
-                    "epsilon": 1e4,
+                    "epsilon": 1.5e4,
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": true,

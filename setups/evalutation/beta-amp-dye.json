@@ -1,7 +1,7 @@
 {
     "threads": 4,
     "experiments": {
-        "beta-cheat-dye": {
+        "beta-amp-dye": {
             "comment": "1500 step dye model",
             "N": 100,
             "type": "simulation",
@@ -15,10 +15,10 @@
                 "output_layer": "motor",
                 "params": {
                     "noise": {"list": [0.1,0.2,0.3,0.4]},
-                    "phi": 0.00045,
-                    "beta": 0.1,
+                    "phi": 0.0005,
+                    "beta": 0.3,
                     "k": 0,
-                    "epsilon": 1e4,
+                    "epsilon": 0.5e4,
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": true,
@@ -27,7 +27,7 @@
                 }
             }
         },
-        "beta-cheat-dye-outbound": {
+        "beta-amp-dye-outbound": {
             "comment": "varying step dye model",
             "N": 100,
             "type": "simulation",
@@ -41,10 +41,10 @@
                 "output_layer": "motor",
                 "params": {
                     "noise": {"list": [0.1,0.2,0.3,0.4]},
-                    "phi": 0.00045,
-                    "beta": 0.1,
+                    "phi": 0.0005,
+                    "beta": 0.3,
                     "k": 0,
-                    "epsilon": 1e4,
+                    "epsilon": 0.5e4,
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": true,
@@ -53,7 +53,7 @@
                 }
             }
         },
-        "beta-cheat-dye-param-noise": {
+        "beta-amp-dye-param-noise": {
             "comment": "1500 step dye model",
             "N": 100,
             "type": "simulation",
@@ -68,10 +68,10 @@
                 "params": {
                     "noise": 0.1,
                     "parameter_noise": {"list": [0.0,0.01,0.02,0.05,0.1]} ,
-                    "phi": 0.00045,
-                    "beta": 0.5,
+                    "phi": 0.0005,
+                    "beta": 0.3,
                     "k": 0,
-                    "epsilon": 1e4,
+                    "epsilon": 0.5e4,
                     "length": 1e-3,
                     "c_tot": 0.3,
                     "cheat": true,

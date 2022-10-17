@@ -3,53 +3,51 @@
     "experiments": {
         "dye1": {
             "comment": "1500 step dye model",
-            "N": 1000,
+            "N": 100,
             "type": "simulation",
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
             "motor_factor": 0.25,
-            "record": ["memory"],
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
                     "noise": 0.1,
                     "phi": 0.00045,
-                    "beta": 0.1,
+                    "beta": 0.5,
                     "k": 0,
-                    "epsilon": 1e4,
-                    "length": 1e-3,
+                    "epsilon": 5,
+                    "length": 1,
                     "c_tot": 0.3,
                     "cheat": false,
                     "start_at_stable": false,
-                    "disable_beta_on_outbound": false
+                    "disable_beta_on_outbound": true
                 }
             }
         },
         "dye2": {
             "comment": "1500 step dye model",
-            "N": 1000,
+            "N": 100,
             "type": "simulation",
             "T_outbound":1500,
             "T_inbound": 1500,
             "min_homing_distance": 0,
-            "motor_factor": 0.25,
-            "record": ["memory"],
+            "motor_factor": -0.25,
             "cx": {
                 "type": "dye",
                 "output_layer": "motor",
                 "params": {
                     "noise": 0.1,
-                    "phi": 0.000297635,
-                    "beta": 0.3333333,
+                    "phi": 0.00045,
+                    "beta": 0.3,
                     "k": 0,
-                    "epsilon": 14.38449,
+                    "epsilon": 5,
                     "length": 1,
                     "c_tot": 0.3,
-                    "cheat": false,
+                    "cheat": true,
                     "start_at_stable": false,
-                    "disable_beta_on_outbound": false
+                    "disable_beta_on_outbound": true
                 }
             }
         }
