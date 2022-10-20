@@ -118,9 +118,9 @@
                 "type": "weights",
                 "params": {
                     "noise": 0.1,
-                    "beta": 0.3,
+                    "beta": 0.5,
                     "mem_gain": 0.0025,
-                    "mem_fade": 0.425
+                    "mem_fade": 0.625
                 }
             }
         },

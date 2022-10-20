@@ -2,7 +2,7 @@
     "threads": 4,
     "experiments": {
         "weights": {
-            "comment": "varying step dye model",
+            "comment": "proof-of-concept weight model",
             "N": 100,
             "type": "simulation",
             "T_outbound": {"list": [500,1000,1500,2000,2500,3000,3500]},
@@ -15,9 +15,9 @@
                 "output_layer": "motor",
                 "params": {
                     "noise": {"list": [0.1,0.2,0.3,0.4]},
-                    "beta": 0.3,
+                    "beta": 0.5,
                     "mem_gain": 0.0025,
-                    "mem_fade": 0.425
+                    "mem_fade": 0.625
                 }
             }
         }

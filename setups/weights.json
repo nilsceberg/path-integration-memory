@@ -3,7 +3,6 @@
         "weights": {
             "N": 100,
             "type": "simulation",
-            "seed": 42,
             "motor_factor": 0.25,
             "T_outbound": 1500,
             "T_inbound": 1500,
@@ -12,7 +11,7 @@
                 "params": {
                     "noise": 0.1,
                     "beta": 0.5,
-                    "mem_fade": 0.65,
+                    "mem_fade": 0.625,
                     "mem_gain": 0.0025
                 }
             }
