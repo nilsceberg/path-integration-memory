@@ -1,7 +1,7 @@
 from .. import rate
-from ...network import Network, RecurrentForwardNetwork, InputLayer, FunctionLayer
+from ...network import Network, RecurrentForwardNetwork, InputLayer, FunctionLayer, WeightedSynapse
 from ..constants import *
-from . import PlasticWeightLayer, motor_output
+from . import PlasticWeightLayer, cpu1a_pontine_output, cpu1b_pontine_output, motor_output
 
 import numpy as np
 
@@ -61,13 +61,26 @@ def build_inverting_network(params) -> Network:
             function = rate.pontine_output(noise),
             initial = np.zeros(N_Pontine)
         ),
-        "CPU1": FunctionLayer(
-            inputs = ["TB1", "memory", "Pontine"],
-            function = rate.cpu1_pontine_output(noise),
-            initial = np.zeros(N_CPU1),
+        "CPU1a": FunctionLayer(
+            inputs = [WeightedSynapse("TB1", rate.W_TB1_CPU1a), "memory", "Pontine"],
+            function = cpu1a_pontine_output(
+                noise,
+                params.get("cpu1_slope", cpu1_pontine_slope_tuned),
+                params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+            ),
+            initial = np.zeros(N_CPU1A),
+        ),
+        "CPU1b": FunctionLayer(
+            inputs = [WeightedSynapse("TB1", rate.W_TB1_CPU1b), "memory", "Pontine"],
+            function = cpu1b_pontine_output(
+                noise,
+                params.get("cpu1_slope", cpu1_pontine_slope_tuned),
+                params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+            ),
+            initial = np.zeros(N_CPU1B),
         ),
         "motor": FunctionLayer(
-            inputs = ["CPU1"],
+            inputs = ["CPU1a","CPU1b"],
             function = motor_output(noise),
         )
     })

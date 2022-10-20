@@ -87,6 +87,10 @@ def build_phase_shift_network(params) -> Network:
     pfn_weight_factor = params.get("pfn_weight_factor", 1)
     holonomic = params.get("holonomic",False)
 
+    cheat = params.get("cheat", False)
+    cheat_bias = params.get("cheat_bias", 0.0000)
+    cheat_slope = params.get("cheat_slope", 100)
+
     return RecurrentForwardNetwork({
         "flow": InputLayer(initial = np.zeros(2)),
         "heading": InputLayer(),
@@ -159,16 +163,22 @@ def build_phase_shift_network(params) -> Network:
                 noise,
                 params.get("cpu1_slope", cpu1_pontine_slope_tuned),
                 params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+                cheat,
+                cheat_bias,
+                cheat_slope,
             ),
             initial = np.zeros(N_CPU1A),
         ),
         "CPU1b": FunctionLayer(
             inputs = [WeightedSynapse("TB1", rate.W_TB1_CPU1b), "memory", "Pontine"],
-            #inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1b), "memory", "Pontine"],
+            #inputs = [WeightedSynapse("CPU4", W_CPU4_CPU1a), "memory", "Pontine"],
             function = cpu1b_pontine_output(
                 noise,
                 params.get("cpu1_slope", cpu1_pontine_slope_tuned),
                 params.get("cpu1_bias", cpu1_pontine_bias_tuned),
+                cheat,
+                cheat_bias,
+                cheat_slope,
             ),
             initial = np.zeros(N_CPU1B),
         ),

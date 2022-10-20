@@ -76,7 +76,7 @@ def pontine_output(noise):
         #return rate.noisy_sigmoid(inputs, pontine_slope_tuned, pontine_bias_tuned, noise)
     return f
 
-def cpu1a_pontine_output(noise, slope, bias):
+def cpu1a_pontine_output(noise, slope, bias, cheat=False, cheat_bias=0.0, cheat_slope=100):
     def f(inputs):
         """The memory and direction used together to get population code for
         heading."""
@@ -85,13 +85,17 @@ def cpu1a_pontine_output(noise, slope, bias):
         inputs = 0.5 * np.dot(rate.W_CPU4_CPU1a, memory)
         inputs -= 0.5 * np.dot(rate.W_pontine_CPU1a, pontine)
 
+        #inputs = expit(100*(inputs-0.0001))
+        if cheat:
+            #inputs = (inputs > 0) * 1.0 # extra cheat
+            inputs = expit(cheat_slope*(inputs-cheat_bias))
+
         inputs -= reference
 
-        #return np.clip(inputs, 0, 1000)
         return rate.noisy_sigmoid(inputs, slope, bias, noise)
     return f
 
-def cpu1b_pontine_output(noise, slope, bias):
+def cpu1b_pontine_output(noise, slope, bias, cheat=False, cheat_bias=0.0, cheat_slope=100):
     def f(inputs):
         """The memory and direction used together to get population code for
         heading."""
@@ -100,9 +104,13 @@ def cpu1b_pontine_output(noise, slope, bias):
         inputs = 0.5 * np.dot(rate.W_CPU4_CPU1b, memory)
         inputs -= 0.5 * np.dot(rate.W_pontine_CPU1b, pontine)
 
+        #inputs = expit(100*(inputs-0.0001))
+        if cheat:
+            #inputs = (inputs > 0) * 1.0 # extra cheat
+            inputs = expit(cheat_slope*(inputs-cheat_bias))
+
         inputs -= reference
 
-        #return np.clip(inputs, 0, 1000)
         return rate.noisy_sigmoid(inputs, slope, bias, noise)
     return f
 
