@@ -2,6 +2,7 @@
 
 from typing import List, Tuple, Union
 from loguru import logger
+# import matplotlib.cm as cm
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import lfilter
@@ -11,8 +12,6 @@ import copy
 
 from .experiment import Experiment, ExperimentResults
 from . import cx
-from . import plotter
-from .models import constants
 
 default_acc = 0.15  # A good value because keeps speed under 1
 default_drag = 0.15
@@ -466,8 +465,8 @@ class SimulationResults(ExperimentResults):
         if self.emergent_exploration:
             ax.scatter(path[1:,0], path[1:,1], marker=".", s=1, label="path", c=np.pi - np.abs(self.angular_heading_error()), cmap="plasma")
         else:
-            ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")
-            ax.plot(path[T_out:,0], path[T_out:,1], label="inbound")
+            ax.plot(path[:T_out,0], path[:T_out,1], label="outbound")#, color=cm.plasma(0.25))  # type: ignore
+            ax.plot(path[T_out:,0], path[T_out:,1], label="inbound")#, color=cm.plasma(0.9)) # type: ignore
 
         closest = self.closest_position()
         if show_closest:
@@ -703,7 +702,7 @@ class SimulationExperiment(Experiment):
                                 i = -1
                                 new_heading = np.pi*-i
                                 # rotation = 0
-                                new_velocity = [0,1*i]
+                                new_velocity = [0,0.47*i]
 
                                 # new_heading, new_velocity = get_next_state(
                                 #     dt=dt,
